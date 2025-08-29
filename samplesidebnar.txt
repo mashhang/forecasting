@@ -1,0 +1,85 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+
+type NavbarProps = {
+  isAuthenticated: boolean;
+  isSidebarOpen: boolean;
+  isProfileOpen: boolean;
+  toggleProfile: () => void;
+  toggleSidebar: () => void;
+};
+
+const Navbar: React.FC<NavbarProps> = ({
+  isAuthenticated,
+  isSidebarOpen,
+  isProfileOpen,
+  toggleProfile,
+  toggleSidebar,
+}) => {
+  const pathname = usePathname();
+  const { user, logout } = useAuth();
+  if (pathname === "/login") return null;
+
+  useState<string | null>(null);
+  const [modalContent, setModalContent] = useState<string | null>(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+
+  const links =
+    user?.role === "USER"
+      ? [
+        {
+          label: "🏠 Dashboard",
+          href: "/dashboard",
+        },
+        {
+          label: "🔐 Authentication & Access",
+          href: "/authenticationaccess",
+        },
+        {
+          label: "🗂️ Data Management",
+          href: "/datamanagement",
+        },
+        {
+          label: "📈 Forecasting (Holt–Winters)",
+          href: "/forecasting",
+        },
+        {
+          label: "📊 Variance Analysis",
+          href: "/varianceanalysis",
+        },
+        {
+          label: "📝 Report Generation",
+          href: "/reportgeneration",
+        },
+        {
+          label: "⚙️ Administration",
+          href: "/administration",
+        },
+        {
+          label: "🔔 Notifications",
+          href: "/notifications",
+        }
+      ]
+      : [
+        {
+          label: "Dashboard",
+          href: "/dashboard",
+        },
+        {
+          label: "My Lessons",
+          href: "/mylesson",
+        },
+        {
+          label: "Progress Report",
+          href: "/progress",
+        },
+      ];
+  
+  return (
+    <></>
+  )
+};
