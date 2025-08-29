@@ -16,14 +16,6 @@ export default function Sidebar() {
           </li>
           <li>
             <button
-              data-target="auth"
-              className="navbtn flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-gray-100 hover:text-black"
-            >
-              🔐 <span>Authentication & Access</span>
-            </button>
-          </li>
-          <li>
-            <button
               data-target="data"
               className="navbtn flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-gray-100 hover:text-black"
             >
