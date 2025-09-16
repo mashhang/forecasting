@@ -6,11 +6,12 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import logo from "@/public/logo.png";
 import Image from "next/image";
-// import ProfileModal from "@/app/components/modals/ProfileModal";
-// import SettingsModal from "@/app/components/modals/SettingsModal";
-// import HelpModal from "@/app/components/modals/HelpModal";
-// import API_URL from "@/lib/getApiUrl";
+import ProfileModal from "@/app/components/modals/ProfileModal";
+import SettingsModal from "@/app/components/modals/SettingsModal";
+import HelpModal from "@/app/components/modals/HelpModal";
+import API_URL from "@/lib/getApiUrl";
 import { UserRound, LogOut } from "lucide-react";
+import { X } from "lucide-react";
 
 type NavbarProps = {
   isAuthenticated: boolean;
@@ -29,9 +30,6 @@ const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const pathname = usePathname();
   const { user, logout } = useAuth(); // ✅ Get user from AuthContext
-
-  if (pathname === "/login") return null; // Hide on login
-  if (pathname === "/register") return null; // Hide on login
 
   const [modalContent, setModalContent] = useState<string | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
@@ -135,11 +133,11 @@ const Navbar: React.FC<NavbarProps> = ({
       <nav className="sticky top-0 p-1 z-40 border-b border-gray-200 bg-[var(--brand-white)]">
         <div
           className={`flex ${
-            !isAuthenticated ? "justify-between" : "justify-center"
+            isAuthenticated ? "justify-between" : "justify-center"
           } mx-6 `}
         >
           <div className="flex space-x-2">
-            {!isAuthenticated && (
+            {isAuthenticated && (
               <button
                 onClick={toggleSidebar}
                 className="rounded-md hover:bg-gray-200 hover:transition-all p-1"
@@ -185,7 +183,7 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {!isAuthenticated && (
+          {isAuthenticated && (
             <button
               onClick={toggleProfile}
               className="flex place-items-center rounded-md hover:bg-gray-200 hover:transition-all p-1 "
@@ -226,7 +224,7 @@ const Navbar: React.FC<NavbarProps> = ({
       {/* Sidebar */}
       <div
         className={`${
-          !isAuthenticated ? "opacity-100" : "opacity-0 pointer-events-none"
+          isAuthenticated ? "opacity-100" : "opacity-0 pointer-events-none"
         }}`}
       >
         <nav
@@ -267,11 +265,12 @@ const Navbar: React.FC<NavbarProps> = ({
             <div className="text-center mb-2">
               {/* ✅ Show logged-in user name */}
               <p className="font-[350]">
-                {user?.firstName} {user?.lastName || "Guest"}
+                {/* {user?.Name} */}
+                {user?.Name || "Guest"}
               </p>
               <p className="text-[#3C3C3C] font-[250] text-[12px]">
-                <strong>ID:</strong>
-                <span>{user?.studentId || "ID"}</span>
+                <strong>Email:</strong>
+                <span>{user?.email || "email@email.com"}</span>
               </p>
             </div>
             {profilelinks.map((link) => (
@@ -304,7 +303,7 @@ const Navbar: React.FC<NavbarProps> = ({
       )}
 
       {/* Centered Popup Modal */}
-      {/* {modalContent && (
+      {modalContent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div
             ref={modalRef}
@@ -323,7 +322,7 @@ const Navbar: React.FC<NavbarProps> = ({
             {modalContent === "help" && <HelpModal />}
           </div>
         </div>
-      )} */}
+      )}
     </>
   );
 };

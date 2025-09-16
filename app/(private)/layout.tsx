@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ProtectedRoute from "@/app/components/ProtectedRoute";
 import { useAuth } from "@/app/context/AuthContext";
 import { SidebarProvider, useSidebar } from "@/app/context/SidebarContext";
 import Navbar from "../components/Navbar";
@@ -11,9 +12,11 @@ export default function PrivateLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <InnerLayout>{children}</InnerLayout>
-    </SidebarProvider>
+    <ProtectedRoute>
+      <SidebarProvider>
+        <InnerLayout>{children}</InnerLayout>
+      </SidebarProvider>
+    </ProtectedRoute>
   );
 }
 

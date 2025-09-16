@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 
 type User = {
   id: string;
-  studentId: string;
-  lastName: string;
-  firstName: string;
+  Name: string;
   email: string;
-  role: "USER" | "ADMIN";
-  mustResetPassword: boolean;
+  role: "STAFF" | "ADMIN";
 };
 
 type AuthContextType = {
@@ -39,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!newToken || !storedUser) {
           setUser(null);
           setToken(null);
-          router.push("/login");
+          router.push("/");
           return;
         }
 
@@ -49,11 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // ✅ Redirect only if on auth or landing page
         const pathname = window.location.pathname;
-        if (
-          pathname === "/" ||
-          pathname === "/login" ||
-          pathname === "/register"
-        ) {
+        if (pathname === "/") {
           const destination =
             parsedUser.role === "ADMIN" ? "/admin" : "/dashboard";
           router.push(destination);
@@ -89,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("token");
     setUser(null);
     setToken(null);
-    router.push("/login");
+    router.push("/");
   };
 
   return (
