@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useState, useEffect, useContext } from "react";
+import {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useEffect,
+} from "react";
 import { useRouter } from "next/navigation";
 
 type User = {
@@ -27,24 +33,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const router = useRouter();
 
+  // Effect for initial loading from localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
+
+    if (storedUser && storedToken) {
+      setUser(JSON.parse(storedUser));
+      setToken(storedToken);
+      // Redirect only if on auth or landing page
+      const pathname = window.location.pathname;
+      if (pathname === "/") {
+        const parsedUser = JSON.parse(storedUser);
+        const destination =
+          parsedUser.role === "ADMIN" ? "/admin" : "/dashboard";
+        router.push(destination);
+      }
+    }
+    setIsLoading(false); // Set loading to false after initial check
+  }, []); // Run only once on mount
+
+  // Effect for handling storage changes
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === "token" || event.key === "user") {
         const newToken = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("user");
+        const storedUserChange = localStorage.getItem("user");
 
-        if (!newToken || !storedUser) {
+        if (!newToken || !storedUserChange) {
           setUser(null);
           setToken(null);
           router.push("/");
           return;
         }
 
-        const parsedUser = JSON.parse(storedUser);
+        const parsedUser = JSON.parse(storedUserChange);
         setUser(parsedUser);
         setToken(newToken);
 
-        // ✅ Redirect only if on auth or landing page
+        // Redirect only if on auth or landing page
         const pathname = window.location.pathname;
         if (pathname === "/") {
           const destination =
@@ -56,18 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
-    }
-    setIsLoading(false); // ✅ Allow layout to render
-  }, []);
+  }, [router]); // Re-run if router changes
 
   const login = (userData: User, token: string) => {
     localStorage.setItem("user", JSON.stringify(userData));
