@@ -266,11 +266,11 @@ const Navbar: React.FC<NavbarProps> = ({
               {/* ✅ Show logged-in user name */}
               <p className="font-[350]">
                 {/* {user?.Name} */}
-                {user?.Name || "Guest"}
+                {user?.name || "Guest"}
               </p>
               <p className="text-[#3C3C3C] font-[250] text-[12px]">
                 <strong>Email:</strong>
-                <span>{user?.email || "email@email.com"}</span>
+                <span> {user?.email || "email@email.com"}</span>
               </p>
             </div>
             {profilelinks.map((link) => (
@@ -304,7 +304,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
       {/* Centered Popup Modal */}
       {modalContent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
           <div
             ref={modalRef}
             className="bg-white rounded-lg w-80 md:w-[28rem] p-6 shadow-lg relative"
@@ -316,7 +316,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <X strokeWidth={1.5} />
             </button>
             {modalContent === "profile" && user?.id && (
-              <ProfileModal userId={user.id} />
+              <ProfileModal id={user.id} />
             )}
             {modalContent === "settings" && <SettingsModal />}
             {modalContent === "help" && <HelpModal />}
