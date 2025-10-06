@@ -4,6 +4,87 @@ import { useSidebar } from "@/app/context/SidebarContext";
 
 export default function DataManagementPage() {
   const { isSidebarOpen } = useSidebar();
+<<<<<<< Updated upstream
+=======
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [rows, setRows] = useState<NormalizedRow[]>([]);
+
+  const { user } = useAuth();
+
+  // inside DataManagementPage
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchRows = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5001/api/file/rows/${user.id}`
+        );
+        const data = await res.json();
+        setRows(data.rows || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchRows();
+  }, [user?.id]);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !user.id) {
+      setMessage("❌ User info not ready. Please wait a moment and try again.");
+      return;
+    }
+
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("userId", user.id); // now guaranteed to exist
+
+    try {
+      setUploading(true);
+      setMessage("");
+
+      const res = await fetch("http://localhost:5001/api/file/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.details) {
+          throw new Error(`${data.error}: ${data.details.join(', ')}`);
+        }
+        throw new Error(data.error || "Upload failed");
+      }
+
+      // Set rows for display
+      setRows(data.rows); // data.rows comes from your backend
+
+      // Enhanced success message with summary
+      const summary = data.summary;
+      setMessage(
+        `✅ Uploaded successfully: ${data.count} rows\n` +
+        `📊 Total Budget: ₱${summary.totalBudget.toLocaleString()}\n` +
+        `🏢 Departments: ${summary.departmentCount} | 📁 Categories: ${summary.categoryCount}\n` +
+        `📋 Proposal: ${data.proposalTitle}`
+      );
+    } catch (err: any) {
+      setMessage(`❌ ${err.message}`);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+>>>>>>> Stashed changes
 
   return (
     <div
@@ -30,6 +111,12 @@ export default function DataManagementPage() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 text-left">
+<<<<<<< Updated upstream
+=======
+                  <th className="px-3 py-2">Description</th>
+                  <th className="px-3 py-2">Justification</th>
+                  <th className="px-3 py-2">Category</th>
+>>>>>>> Stashed changes
                   <th className="px-3 py-2">Department</th>
                   <th className="px-3 py-2">Year</th>
                   <th className="px-3 py-2">Q1</th>
@@ -40,6 +127,7 @@ export default function DataManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
+<<<<<<< Updated upstream
                 <tr>
                   <td className="px-3 py-2">Engineering</td>
                   <td className="px-3 py-2">2023</td>
@@ -72,6 +160,35 @@ export default function DataManagementPage() {
                     </button>
                   </td>
                 </tr>
+=======
+                {rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={10}
+                      className="px-3 py-6 text-center text-gray-500"
+                    >
+                      No data uploaded yet
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-gray-100">
+                      <td className="px-3 py-2">{row.description}</td>
+                      <td className="px-3 py-2 max-w-xs truncate" title={row.justification || ""}>
+                        {row.justification || "N/A"}
+                      </td>
+                      <td className="px-3 py-2">{row.category}</td>
+                      <td className="px-3 py-2">{row.department}</td>
+                      <td className="px-3 py-2">{row.year}</td>
+                      <td className="px-3 py-2">₱{row.q1.toLocaleString()}</td>
+                      <td className="px-3 py-2">₱{row.q2.toLocaleString()}</td>
+                      <td className="px-3 py-2">₱{row.q3.toLocaleString()}</td>
+                      <td className="px-3 py-2">₱{row.q4.toLocaleString()}</td>
+                      <td className="px-3 py-2 font-medium">₱{row.total.toLocaleString()}</td>
+                    </tr>
+                  ))
+                )}
+>>>>>>> Stashed changes
               </tbody>
             </table>
           </div>
