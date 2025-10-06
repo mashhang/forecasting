@@ -3,6 +3,7 @@
 import { useAuth } from "@/app/context/AuthContext";
 import { useSidebar } from "@/app/context/SidebarContext";
 import { useRef, useState, useEffect } from "react";
+import getApiUrl from "@/lib/getApiUrl";
 
 type NormalizedRow = {
   description: string;
@@ -33,7 +34,7 @@ export default function DataManagementPage() {
     const fetchRows = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5001/api/file/rows/${user.id}`
+          `${getApiUrl()}/api/file/rows/${user.id}`
         );
         const data = await res.json();
         setRows(data.rows || []);
@@ -66,7 +67,7 @@ export default function DataManagementPage() {
       setUploading(true);
       setMessage("");
 
-      const res = await fetch("http://localhost:5001/api/file/upload", {
+      const res = await fetch(`${getApiUrl()}/api/file/upload`, {
         method: "POST",
         body: formData,
       });
