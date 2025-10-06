@@ -1,11 +1,24 @@
 "use client";
 
+import { useAuth } from "@/app/context/AuthContext";
 import { useSidebar } from "@/app/context/SidebarContext";
+import { useRef, useState, useEffect } from "react";
+
+type NormalizedRow = {
+  description: string;
+  justification: string | null;
+  category: string;
+  department: string;
+  year: number;
+  q1: number;
+  q2: number;
+  q3: number;
+  q4: number;
+  total: number;
+};
 
 export default function DataManagementPage() {
   const { isSidebarOpen } = useSidebar();
-<<<<<<< Updated upstream
-=======
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
@@ -84,83 +97,58 @@ export default function DataManagementPage() {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
->>>>>>> Stashed changes
 
   return (
     <div
-      className={`transition-all duration-300 ease-in-out h-screen
-        ${
-          isSidebarOpen
-            ? "md:ml-64 md:w-[calc(100%-16rem)] px-20"
-            : "md:ml-0 w-full"
-        }
-      `}
+      className={`transition-all duration-300 ease-in-out h-screen ${
+        isSidebarOpen
+          ? "md:ml-64 md:w-[calc(100%-16rem)] px-20"
+          : "md:ml-0 w-full"
+      }`}
     >
       <div className="mx-auto max-w-[1600px] mt-4">
         <div className="rounded-2xl border bg-white p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Data Management</h2>
-            <button className="rounded-xl bg-[var(--brand-gold)] px-3 py-2 text-[var(--brand-ink)]">
-              Upload CSV/Excel
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleUploadClick}
+                disabled={uploading || !user?.id}
+                className="rounded-xl bg-[var(--brand-gold)] px-3 py-2 text-[var(--brand-ink)]"
+              >
+                {uploading ? "Uploading..." : "Upload CSV/Excel"}
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </div>
           </div>
-          <p className="mt-1 text-sm text-gray-600">
-            Historical quarterly budget & expenditure (last 3 years).
-          </p>
+
+          {message && (
+            <p className="mt-2 text-sm font-medium text-blue-600">{message}</p>
+          )}
+
           <div className="mt-4 overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 text-left">
-<<<<<<< Updated upstream
-=======
                   <th className="px-3 py-2">Description</th>
                   <th className="px-3 py-2">Justification</th>
                   <th className="px-3 py-2">Category</th>
->>>>>>> Stashed changes
                   <th className="px-3 py-2">Department</th>
                   <th className="px-3 py-2">Year</th>
                   <th className="px-3 py-2">Q1</th>
                   <th className="px-3 py-2">Q2</th>
                   <th className="px-3 py-2">Q3</th>
                   <th className="px-3 py-2">Q4</th>
-                  <th className="px-3 py-2">Actions</th>
+                  <th className="px-3 py-2">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
-<<<<<<< Updated upstream
-                <tr>
-                  <td className="px-3 py-2">Engineering</td>
-                  <td className="px-3 py-2">2023</td>
-                  <td className="px-3 py-2">₱1.0M</td>
-                  <td className="px-3 py-2">₱1.1M</td>
-                  <td className="px-3 py-2">₱1.2M</td>
-                  <td className="px-3 py-2">₱1.0M</td>
-                  <td className="space-x-2 px-3 py-2">
-                    <button className="rounded-lg border px-2 py-1 text-xs">
-                      Edit
-                    </button>
-                    <button className="rounded-lg border px-2 py-1 text-xs">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-3 py-2">IT</td>
-                  <td className="px-3 py-2">2023</td>
-                  <td className="px-3 py-2">₱0.8M</td>
-                  <td className="px-3 py-2">₱0.9M</td>
-                  <td className="px-3 py-2">₱1.0M</td>
-                  <td className="px-3 py-2">₱0.95M</td>
-                  <td className="space-x-2 px-3 py-2">
-                    <button className="rounded-lg border px-2 py-1 text-xs">
-                      Edit
-                    </button>
-                    <button className="rounded-lg border px-2 py-1 text-xs">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-=======
                 {rows.length === 0 ? (
                   <tr>
                     <td
@@ -188,7 +176,6 @@ export default function DataManagementPage() {
                     </tr>
                   ))
                 )}
->>>>>>> Stashed changes
               </tbody>
             </table>
           </div>

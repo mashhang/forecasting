@@ -1,13 +1,20 @@
 "use client";
 
-import { createContext, useState, useEffect, useContext } from "react";
+import {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useEffect,
+} from "react";
 import { useRouter } from "next/navigation";
 
 type User = {
   id: string;
-  Name: string;
+  name: string;
   email: string;
   role: "STAFF" | "ADMIN";
+  firstLogin?: boolean;
 };
 
 type AuthContextType = {
@@ -27,37 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const router = useRouter();
 
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === "token" || event.key === "user") {
-        const newToken = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("user");
-
-        if (!newToken || !storedUser) {
-          setUser(null);
-          setToken(null);
-          router.push("/");
-          return;
-        }
-
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setToken(newToken);
-
-        // ✅ Redirect only if on auth or landing page
-        const pathname = window.location.pathname;
-        if (pathname === "/") {
-          const destination =
-            parsedUser.role === "ADMIN" ? "/admin" : "/dashboard";
-          router.push(destination);
-        }
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
-
+  // Effect for initial loading from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
@@ -65,16 +42,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
       setToken(storedToken);
+      // Redirect only if on auth or landing page
+      const pathname = window.location.pathname;
+      if (pathname === "/") {
+        const parsedUser = JSON.parse(storedUser);
+        // Check if this is first login
+        if (parsedUser.firstLogin === true) {
+          router.push("/change-password");
+        } else {
+          const destination =
+            parsedUser.role === "ADMIN" ? "/administration" : "/dashboard";
+          router.push(destination);
+        }
+      }
     }
-    setIsLoading(false); // ✅ Allow layout to render
-  }, []);
+    setIsLoading(false); // Set loading to false after initial check
+  }, []); // Run only once on mount
+
+  // Effect for handling storage changes
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "token" || event.key === "user") {
+        const newToken = localStorage.getItem("token");
+        const storedUserChange = localStorage.getItem("user");
+
+        if (!newToken || !storedUserChange) {
+          setUser(null);
+          setToken(null);
+          router.push("/");
+          return;
+        }
+
+        const parsedUser = JSON.parse(storedUserChange);
+        setUser(parsedUser);
+        setToken(newToken);
+
+        // Redirect only if on auth or landing page
+        const pathname = window.location.pathname;
+        if (pathname === "/") {
+          const destination =
+            parsedUser.role === "ADMIN" ? "/administration" : "/dashboard";
+          router.push(destination);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [router]); // Re-run if router changes
 
   const login = (userData: User, token: string) => {
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", token);
     setUser(userData);
     setToken(token);
-    router.push(userData.role === "ADMIN" ? "/admin" : "/dashboard");
+    
+    // Check if this is first login
+    if (userData.firstLogin === true) {
+      router.push("/change-password");
+    } else {
+      router.push(userData.role === "ADMIN" ? "/administration" : "/dashboard");
+    }
   };
 
   const logout = () => {

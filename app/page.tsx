@@ -6,7 +6,7 @@ import { useAuth } from "./context/AuthContext";
 import Image from "next/image";
 import { toast } from "sonner";
 import Logo from "../../public/logo.png";
-import API_URL from "@/lib/getApiUrl";
+import getApiUrl from "@/lib/getApiUrl";
 import { CgSpinner } from "react-icons/cg";
 
 export default function Login() {
@@ -38,7 +38,7 @@ export default function Login() {
 
     try {
       setIsLoggingIn(true);
-      const res = await fetch(`${API_URL}/api/auth/login`, {
+      const res = await fetch(`${getApiUrl()}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

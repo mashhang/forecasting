@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import API_URL from "@/lib/getApiUrl";
+import getApiUrl from "@/lib/getApiUrl";
 
 // const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
-const ProfileModal = ({ userId }: { userId: string }) => {
+const ProfileModal = ({ id }: { id: string }) => {
   const [user, setUser] = useState<{
-    studentId: string;
-    lastName: string;
-    firstName: string;
+    name: string;
     email: string;
     createdAt: string;
   } | null>(null);
@@ -19,7 +17,7 @@ const ProfileModal = ({ userId }: { userId: string }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/user/${userId}`);
+        const response = await fetch(`${getApiUrl()}/api/user/${id}`);
         if (!response.ok) {
           throw new Error("User not found");
         }
@@ -33,7 +31,7 @@ const ProfileModal = ({ userId }: { userId: string }) => {
     };
 
     fetchUser();
-  }, [userId]);
+  }, [id]);
 
   if (loading)
     return <p className="text-sm md:text-base">Loading user data...</p>;
@@ -45,10 +43,7 @@ const ProfileModal = ({ userId }: { userId: string }) => {
         My Account
       </h2>
       <p className="text-sm md:text-base">
-        <strong>Student ID:</strong> {user?.studentId}
-      </p>
-      <p className="text-sm md:text-base">
-        <strong>Name:</strong> {user?.lastName}, {user?.firstName}
+        <strong>Name:</strong> {user?.name}
       </p>
       <p className="text-sm md:text-base">
         <strong>Email:</strong> {user?.email}
