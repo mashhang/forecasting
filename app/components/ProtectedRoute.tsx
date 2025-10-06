@@ -15,9 +15,12 @@ export default function ProtectedRoute({
     if (!isLoading) {
       if (!user) {
         router.push("/");
+      } else if (user.firstLogin === true) {
+        // 👈 Force password change on first login
+        router.push("/change-password");
       } else if (user.role === "ADMIN") {
         // 👈 Prevent admin from accessing user-only pages
-        router.push("/admin");
+        router.push("/administration");
       }
     }
   }, [user, isLoading, router]);

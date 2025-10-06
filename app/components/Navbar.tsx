@@ -40,10 +40,6 @@ const Navbar: React.FC<NavbarProps> = ({
       ? [
           {
             label: "Dashboard",
-            href: "/admin",
-          },
-          {
-            label: "⚙️ Administration",
             href: "/administration",
           },
         ]
@@ -160,7 +156,7 @@ const Navbar: React.FC<NavbarProps> = ({
             )}
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 rounded-full">
-                <Link href={user?.role === "ADMIN" ? "/admin" : "/dashboard"}>
+                <Link href={user?.role === "ADMIN" ? "/administration" : "/dashboard"}>
                   <Image
                     className="p-1"
                     src={logo}

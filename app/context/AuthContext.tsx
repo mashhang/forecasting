@@ -14,6 +14,7 @@ type User = {
   name: string;
   email: string;
   role: "STAFF" | "ADMIN";
+  firstLogin?: boolean;
 };
 
 type AuthContextType = {
@@ -45,9 +46,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const pathname = window.location.pathname;
       if (pathname === "/") {
         const parsedUser = JSON.parse(storedUser);
-        const destination =
-          parsedUser.role === "ADMIN" ? "/admin" : "/dashboard";
-        router.push(destination);
+        // Check if this is first login
+        if (parsedUser.firstLogin === true) {
+          router.push("/change-password");
+        } else {
+          const destination =
+            parsedUser.role === "ADMIN" ? "/administration" : "/dashboard";
+          router.push(destination);
+        }
       }
     }
     setIsLoading(false); // Set loading to false after initial check
@@ -75,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const pathname = window.location.pathname;
         if (pathname === "/") {
           const destination =
-            parsedUser.role === "ADMIN" ? "/admin" : "/dashboard";
+            parsedUser.role === "ADMIN" ? "/administration" : "/dashboard";
           router.push(destination);
         }
       }
@@ -90,7 +96,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("token", token);
     setUser(userData);
     setToken(token);
-    router.push(userData.role === "ADMIN" ? "/admin" : "/dashboard");
+    
+    // Check if this is first login
+    if (userData.firstLogin === true) {
+      router.push("/change-password");
+    } else {
+      router.push(userData.role === "ADMIN" ? "/administration" : "/dashboard");
+    }
   };
 
   const logout = () => {
