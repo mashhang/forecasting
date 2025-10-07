@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Departmental Quarterly Budget Forecasting",
   description: "Made by Edrel King",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({
