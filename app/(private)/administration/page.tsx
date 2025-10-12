@@ -77,38 +77,38 @@ export default function AdministrationPage() {
     setCurrentUser(null);
   };
 
-  const handleDeleteClick = (user: User) => {
-    setUserToDelete(user);
-    setIsDeleteUserModalOpen(true);
-    fetchUsers();
-    fetchLogs();
-  };
+  // const handleDeleteClick = (user: User) => {
+  //   setUserToDelete(user);
+  //   setIsDeleteUserModalOpen(true);
+  //   fetchUsers();
+  //   fetchLogs();
+  // };
 
-  const handleDeleteUser = async () => {
-    if (userToDelete) {
-      try {
-        const response = await fetch(`${getApiUrl()}/api/user/${userToDelete.id}`, {
-          method: "DELETE",
-        });
+  // const handleDeleteUser = async () => {
+  //   if (userToDelete) {
+  //     try {
+  //       const response = await fetch(`${getApiUrl()}/api/user/${userToDelete.id}`, {
+  //         method: "DELETE",
+  //       });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to delete user");
-        }
+  //       if (!response.ok) {
+  //         const errorData = await response.json();
+  //         throw new Error(errorData.error || "Failed to delete user");
+  //       }
 
-        fetchUsers();
-        fetchLogs();
-        onCloseDeleteModal();
-      } catch (error) {
-        console.error("Error deleting user:", error);
-      }
-    }
-  };
+  //       fetchUsers();
+  //       fetchLogs();
+  //       onCloseDeleteModal();
+  //     } catch (error) {
+  //       console.error("Error deleting user:", error);
+  //     }
+  //   }
+  // };
 
-  const onCloseDeleteModal = () => {
-    setIsDeleteUserModalOpen(false);
-    setUserToDelete(null);
-  };
+  // const onCloseDeleteModal = () => {
+  //   setIsDeleteUserModalOpen(false);
+  //   setUserToDelete(null);
+  // };
 
   return (
     <div
@@ -163,17 +163,17 @@ export default function AdministrationPage() {
                     </td>
                     <td className="space-x-2 px-3 py-2">
                       <button
-                        className="rounded-lg border px-2 py-1 text-xs shadow-sm hover:shadow-md"
+                        className="rounded-lg border px-3 py-2 text-xs shadow-sm hover:shadow-md"
                         onClick={() => handleEditUser(user)}
                       >
                         Edit
                       </button>
-                      <button
+                      {/* <button
                         className="rounded-lg border border-red-500 px-2 py-1 text-xs text-red-500 shadow-sm hover:shadow-md"
                         onClick={() => handleDeleteClick(user)}
                       >
                         Delete
-                      </button>
+                      </button> */}
                     </td>
                   </tr>
                 ))}
@@ -183,11 +183,14 @@ export default function AdministrationPage() {
         </div>
 
         {/* System Configuration */}
-        <div className="mt-6 rounded-2xl border bg-white p-6">
+        {/* <div className="mt-6 rounded-2xl border bg-white p-6">
           <h2 className="text-lg font-semibold">System Configuration</h2>
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label htmlFor="forecastHorizon" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="forecastHorizon"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Forecast Horizon (months)
               </label>
               <input
@@ -198,14 +201,19 @@ export default function AdministrationPage() {
               />
             </div>
             <div>
-              <label htmlFor="outputFormat" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="outputFormat"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Output Format
               </label>
               <select
                 id="outputFormat"
                 className="mt-1 block w-full rounded-md px-3 py-2 border-gray-300 shadow-sm hover:shadow-md focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               >
-                <option selected disabled value="">Select Format</option>
+                <option selected disabled value="">
+                  Select Format
+                </option>
                 <option value="pdf">PDF</option>
                 <option value="csv">CSV</option>
                 <option value="excel">Excel</option>
@@ -217,7 +225,7 @@ export default function AdministrationPage() {
               Save Configurations
             </button>
           </div>
-        </div>
+        </div> */}
 
         {/* System Logs */}
         <div className="mt-6 rounded-2xl border bg-white p-6">
@@ -226,7 +234,9 @@ export default function AdministrationPage() {
             {logs.length > 0 ? (
               logs.map((log, index) => (
                 <p key={index}>
-                  [{new Date(log.timestamp).toLocaleString()}] {log.level}: {log.message}{log.userName ? ` (User: ${log.userName})` : ''}
+                  [{new Date(log.timestamp).toLocaleString()}] {log.level}:{" "}
+                  {log.message}
+                  {log.userName ? ` (User: ${log.userName})` : ""}
                 </p>
               ))
             ) : (
@@ -249,12 +259,12 @@ export default function AdministrationPage() {
         currentUser={currentUser}
       />
 
-      <DeleteUserModal
+      {/* <DeleteUserModal
         isOpen={isDeleteUserModalOpen}
         onClose={onCloseDeleteModal}
         onConfirmDelete={handleDeleteUser}
         userName={userToDelete?.name || ""}
-      />
+      /> */}
     </div>
   );
 }
