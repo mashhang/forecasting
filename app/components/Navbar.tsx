@@ -156,7 +156,11 @@ const Navbar: React.FC<NavbarProps> = ({
             )}
             <div className="flex items-center gap-3">
               <div className="grid h-10 w-10 rounded-full">
-                <Link href={user?.role === "ADMIN" ? "/administration" : "/dashboard"}>
+                <Link
+                  href={
+                    user?.role === "ADMIN" ? "/administration" : "/dashboard"
+                  }
+                >
                   <Image
                     className="p-1"
                     src={logo}
@@ -224,8 +228,9 @@ const Navbar: React.FC<NavbarProps> = ({
         }}`}
       >
         <nav
-          className={`fixed left-0 top-10 z-30 h-[calc(100vh-4rem)] w-64 border-r border-gray-200 bg-[var(--brand-white)] p-4 transition-transform duration-300 transform font-[300]
-          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`fixed left-0 top-10 z-30 h-[calc(100vh-4rem)] w-64 border-r border-gray-200 bg-[var(--brand-white)] p-4 transition-transform duration-300 transform font-[300] translate-x-0
+          `}
+          //${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
           <div className="space-y-1">
             <div className="px-3 py-2 text-xs font-semibold text-gray-1000">

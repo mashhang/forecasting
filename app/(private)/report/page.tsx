@@ -7,13 +7,15 @@ export default function ReportGenerationPage() {
 
   return (
     <div
-      className={`transition-all duration-300 ease-in-out h-screen
-        ${
+      className={`transition-all duration-300 ease-in-out h-screen md:ml-64 md:w-[calc(100%-16rem)] px-20
+        
+      `}
+
+      /* ${
           isSidebarOpen
             ? "md:ml-64 md:w-[calc(100%-16rem)] px-20"
             : "md:ml-0 w-full"
-        }
-      `}
+        } */
     >
       <div className="mx-auto max-w-[1600px] mt-4">
         <div className="grid gap-6 md:grid-cols-2">

@@ -3,20 +3,8 @@
 import { useAuth } from "@/app/context/AuthContext";
 import { useSidebar } from "@/app/context/SidebarContext";
 import { useRef, useState, useEffect } from "react";
-import getApiUrl from "@/lib/getApiUrl";
-
-type NormalizedRow = {
-  description: string;
-  justification: string | null;
-  category: string;
-  department: string;
-  year: number;
-  q1: number;
-  q2: number;
-  q3: number;
-  q4: number;
-  total: number;
-};
+// import getApiUrl from "@/lib/getApiUrl"; // COMMENTED OUT - Using mock data instead
+import { mockData, getMockSummary, type NormalizedRow } from "@/lib/mockData";
 
 export default function DataManagementPage() {
   const { isSidebarOpen } = useSidebar();
@@ -27,69 +15,103 @@ export default function DataManagementPage() {
 
   const { user } = useAuth();
 
-  // inside DataManagementPage
+  // COMMENTED OUT - Using mock data instead of API calls
+  // useEffect(() => {
+  //   if (!user?.id) return;
+
+  //   const fetchRows = async () => {
+  //     try {
+  //       const res = await fetch(
+  //         `${getApiUrl()}/api/file/rows/${user.id}`
+  //       );
+  //       const data = await res.json();
+  //       setRows(data.rows || []);
+  //     } catch (err) {
+  //       console.error(err);
+  //     }
+  //   };
+
+  //   fetchRows();
+  // }, [user?.id]);
+
+  // Load mock data on component mount
   useEffect(() => {
-    if (!user?.id) return;
-
-    const fetchRows = async () => {
-      try {
-        const res = await fetch(
-          `${getApiUrl()}/api/file/rows/${user.id}`
-        );
-        const data = await res.json();
-        setRows(data.rows || []);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchRows();
-  }, [user?.id]);
+    setRows(mockData);
+  }, []);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !user.id) {
-      setMessage("❌ User info not ready. Please wait a moment and try again.");
-      return;
-    }
+    // COMMENTED OUT - Using mock data instead of actual file upload
+    // if (!user || !user.id) {
+    //   setMessage("❌ User info not ready. Please wait a moment and try again.");
+    //   return;
+    // }
 
+    // const file = e.target.files?.[0];
+    // if (!file) return;
+
+    // const formData = new FormData();
+    // formData.append("file", file);
+    // formData.append("userId", user.id); // now guaranteed to exist
+
+    // try {
+    //   setUploading(true);
+    //   setMessage("");
+
+    //   const res = await fetch(`${getApiUrl()}/api/file/upload`, {
+    //     method: "POST",
+    //     body: formData,
+    //   });
+
+    //   const data = await res.json();
+    //   if (!res.ok) {
+    //     if (data.details) {
+    //       throw new Error(`${data.error}: ${data.details.join(', ')}`);
+    //     }
+    //     throw new Error(data.error || "Upload failed");
+    //   }
+
+    //   // Set rows for display
+    //   setRows(data.rows); // data.rows comes from your backend
+
+    //   // Enhanced success message with summary
+    //   const summary = data.summary;
+    //   setMessage(
+    //     `✅ Uploaded successfully: ${data.count} rows\n` +
+    //     `📊 Total Budget: ₱${summary.totalBudget.toLocaleString()}\n` +
+    //     `🏢 Departments: ${summary.departmentCount} | 📁 Categories: ${summary.categoryCount}\n` +
+    //     `📋 Proposal: ${data.proposalTitle}`
+    //   );
+    // } catch (err: any) {
+    //   setMessage(`❌ ${err.message}`);
+    // } finally {
+    //   setUploading(false);
+    //   if (fileInputRef.current) fileInputRef.current.value = "";
+    // }
+
+    // MOCK FILE UPLOAD SIMULATION
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("userId", user.id); // now guaranteed to exist
 
     try {
       setUploading(true);
       setMessage("");
 
-      const res = await fetch(`${getApiUrl()}/api/file/upload`, {
-        method: "POST",
-        body: formData,
-      });
+      // Simulate upload delay
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.details) {
-          throw new Error(`${data.error}: ${data.details.join(', ')}`);
-        }
-        throw new Error(data.error || "Upload failed");
-      }
+      // Use mock data as if it was uploaded
+      const summary = getMockSummary(mockData);
+      setRows(mockData);
 
-      // Set rows for display
-      setRows(data.rows); // data.rows comes from your backend
-
-      // Enhanced success message with summary
-      const summary = data.summary;
       setMessage(
-        `✅ Uploaded successfully: ${data.count} rows\n` +
-        `📊 Total Budget: ₱${summary.totalBudget.toLocaleString()}\n` +
-        `🏢 Departments: ${summary.departmentCount} | 📁 Categories: ${summary.categoryCount}\n` +
-        `📋 Proposal: ${data.proposalTitle}`
+        `✅ Mock Upload Successful: ${mockData.length} rows loaded\n` +
+          `📊 Total Budget: ₱${summary.totalBudget.toLocaleString()}\n` +
+          `🏢 Departments: ${summary.departmentCount} | 📁 Categories: ${summary.categoryCount}\n` +
+          `📋 Proposal: ${summary.proposalTitle}`
       );
     } catch (err: any) {
       setMessage(`❌ ${err.message}`);
@@ -101,11 +123,12 @@ export default function DataManagementPage() {
 
   return (
     <div
-      className={`transition-all duration-300 ease-in-out h-screen ${
+      className={`transition-all duration-300 ease-in-out h-screen md:ml-64 md:w-[calc(100%-16rem)] px-20 `}
+      /* ${
         isSidebarOpen
           ? "md:ml-64 md:w-[calc(100%-16rem)] px-20"
           : "md:ml-0 w-full"
-      }`}
+      } */
     >
       <div className="mx-auto max-w-[1600px] mt-4">
         <div className="rounded-2xl border bg-white p-6">
@@ -163,7 +186,10 @@ export default function DataManagementPage() {
                   rows.map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-100">
                       <td className="px-3 py-2">{row.description}</td>
-                      <td className="px-3 py-2 max-w-xs truncate" title={row.justification || ""}>
+                      <td
+                        className="px-3 py-2 max-w-xs truncate"
+                        title={row.justification || ""}
+                      >
                         {row.justification || "N/A"}
                       </td>
                       <td className="px-3 py-2">{row.category}</td>
@@ -173,7 +199,9 @@ export default function DataManagementPage() {
                       <td className="px-3 py-2">₱{row.q2.toLocaleString()}</td>
                       <td className="px-3 py-2">₱{row.q3.toLocaleString()}</td>
                       <td className="px-3 py-2">₱{row.q4.toLocaleString()}</td>
-                      <td className="px-3 py-2 font-medium">₱{row.total.toLocaleString()}</td>
+                      <td className="px-3 py-2 font-medium">
+                        ₱{row.total.toLocaleString()}
+                      </td>
                     </tr>
                   ))
                 )}
