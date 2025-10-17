@@ -9,7 +9,6 @@ import {
   mockDepartments,
   generateMockForecast,
   type ForecastRow,
-  type VarianceRow,
 } from "@/lib/mockData";
 import ForecastChart from "@/app/components/ForecastChart";
 
@@ -28,7 +27,6 @@ export default function Forecasting() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [forecasts, setForecasts] = useState<ForecastRow[]>([]);
-  const [varianceAnalysis, setVarianceAnalysis] = useState<VarianceRow[]>([]);
   const [seasonalEffect, setSeasonalEffect] = useState<number>(0);
   const [chartData, setChartData] = useState<any>(null);
 
@@ -74,7 +72,7 @@ export default function Forecasting() {
     if (!user) return;
     setLoading(true);
     setError(null);
-    setMessage(null);
+    // setMessage(null);
 
     try {
       // COMMENTED OUT - Using mock data instead of API calls
@@ -111,12 +109,11 @@ export default function Forecasting() {
       );
 
       setForecasts(result.forecasts);
-      setVarianceAnalysis(result.varianceAnalysis);
       setSeasonalEffect(result.seasonalEffect);
       setChartData(result.chartData);
-      setMessage(
-        `Mock forecast generated successfully for ${selectedDepartment}!`
-      );
+      // setMessage(
+      //   `Mock forecast generated successfully for ${selectedDepartment}!`
+      // );
     } catch (err: any) {
       console.error(err);
       setError(err.message || "An unknown error occurred during forecasting");
@@ -274,18 +271,13 @@ export default function Forecasting() {
                       <th className="px-3 py-2">Forecasted Q3</th>
                       <th className="px-3 py-2">Forecasted Q4</th>
                       <th className="px-3 py-2">Forecasted Total</th>
-                      <th className="px-3 py-2">Variance Q1</th>
-                      <th className="px-3 py-2">Variance Q2</th>
-                      <th className="px-3 py-2">Variance Q3</th>
-                      <th className="px-3 py-2">Variance Q4</th>
-                      <th className="px-3 py-2">Variance Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {forecasts.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={18}
+                          colSpan={13}
                           className="px-3 py-6 text-center text-gray-500"
                         >
                           No forecast data available. Please select a department
@@ -331,46 +323,6 @@ export default function Forecasting() {
                           </td>
                           <td className="px-3 py-2">
                             ₱{forecastItem.forecastedTotal.toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2">
-                            {typeof varianceAnalysis[idx]?.varianceQ1 ===
-                            "number"
-                              ? `₱${varianceAnalysis[
-                                  idx
-                                ]?.varianceQ1.toLocaleString()}`
-                              : varianceAnalysis[idx]?.varianceQ1}
-                          </td>
-                          <td className="px-3 py-2">
-                            {typeof varianceAnalysis[idx]?.varianceQ2 ===
-                            "number"
-                              ? `₱${varianceAnalysis[
-                                  idx
-                                ]?.varianceQ2.toLocaleString()}`
-                              : varianceAnalysis[idx]?.varianceQ2}
-                          </td>
-                          <td className="px-3 py-2">
-                            {typeof varianceAnalysis[idx]?.varianceQ3 ===
-                            "number"
-                              ? `₱${varianceAnalysis[
-                                  idx
-                                ]?.varianceQ3.toLocaleString()}`
-                              : varianceAnalysis[idx]?.varianceQ3}
-                          </td>
-                          <td className="px-3 py-2">
-                            {typeof varianceAnalysis[idx]?.varianceQ4 ===
-                            "number"
-                              ? `₱${varianceAnalysis[
-                                  idx
-                                ]?.varianceQ4.toLocaleString()}`
-                              : varianceAnalysis[idx]?.varianceQ4}
-                          </td>
-                          <td className="px-3 py-2">
-                            {typeof varianceAnalysis[idx]?.varianceTotal ===
-                            "number"
-                              ? `₱${varianceAnalysis[
-                                  idx
-                                ]?.varianceTotal.toLocaleString()}`
-                              : varianceAnalysis[idx]?.varianceTotal}
                           </td>
                         </tr>
                       ))

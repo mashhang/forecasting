@@ -1,9 +1,69 @@
 "use client";
 
 import { useSidebar } from "@/app/context/SidebarContext";
+import { useState, useEffect } from "react";
+import { mockData, type NormalizedRow } from "@/lib/mockData";
+
+interface VarianceAnalysisRow {
+  department: string;
+  forecast: number;
+  proposal: number;
+  variance: number;
+  percentage: number;
+  status: "Approved" | "For Review" | "Disapproved";
+}
 
 export default function VarianceAnalysisPage() {
   const { isSidebarOpen } = useSidebar();
+  const [varianceData, setVarianceData] = useState<VarianceAnalysisRow[]>([]);
+
+  // Generate variance analysis from mock data
+  useEffect(() => {
+    const generateVarianceAnalysis = () => {
+      // Group data by department
+      const departmentTotals = mockData.reduce((acc, row) => {
+        if (!acc[row.department]) {
+          acc[row.department] = 0;
+        }
+        acc[row.department] += row.total;
+        return acc;
+      }, {} as Record<string, number>);
+
+      // Generate variance analysis for each department
+      const analysis: VarianceAnalysisRow[] = Object.entries(
+        departmentTotals
+      ).map(([department, proposal]) => {
+        // Generate a realistic forecast (slightly different from proposal)
+        const varianceFactor = (Math.random() - 0.5) * 0.3; // ±15% variance
+        const forecast = Math.round(proposal * (1 + varianceFactor));
+        const variance = forecast - proposal;
+        const percentage = Math.round((variance / proposal) * 100 * 10) / 10; // Round to 1 decimal
+
+        // Determine status based on percentage variance
+        let status: "Approved" | "For Review" | "Disapproved";
+        if (Math.abs(percentage) <= 5) {
+          status = "Approved";
+        } else if (Math.abs(percentage) <= 15) {
+          status = "For Review";
+        } else {
+          status = "Disapproved";
+        }
+
+        return {
+          department,
+          forecast,
+          proposal,
+          variance,
+          percentage,
+          status,
+        };
+      });
+
+      setVarianceData(analysis);
+    };
+
+    generateVarianceAnalysis();
+  }, []);
 
   return (
     <div
@@ -23,7 +83,7 @@ export default function VarianceAnalysisPage() {
             <div className="flex gap-2">
               <button className="rounded-xl border px-3 py-2">Export</button>
               <button className="rounded-xl bg-[var(--brand-gold)] px-3 py-2">
-                Flag &gt; 15%
+                Flag &gt; 20%
               </button>
             </div>
           </div>
@@ -40,48 +100,57 @@ export default function VarianceAnalysisPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                <tr>
-                  <td className="px-3 py-2">Engineering</td>
-                  <td className="px-3 py-2">₱ 1.25M</td>
-                  <td className="px-3 py-2">₱ 1.52M</td>
-                  <td className="px-3 py-2">₱ 0.27M</td>
-                  <td className="px-3 py-2 font-semibold text-red-600">
-                    +21.6%
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="rounded-full bg-red-100 px-2 py-1 text-xs text-red-700">
-                      Review
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-3 py-2">IT</td>
-                  <td className="px-3 py-2">₱ 0.98M</td>
-                  <td className="px-3 py-2">₱ 0.96M</td>
-                  <td className="px-3 py-2">-₱ 0.02M</td>
-                  <td className="px-3 py-2 font-semibold text-green-700">
-                    -2.0%
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">
-                      OK
-                    </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-3 py-2">SHS</td>
-                  <td className="px-3 py-2">₱ 0.75M</td>
-                  <td className="px-3 py-2">₱ 0.89M</td>
-                  <td className="px-3 py-2">₱ 0.14M</td>
-                  <td className="px-3 py-2 font-semibold text-yellow-700">
-                    +18.7%
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
-                      Check
-                    </span>
-                  </td>
-                </tr>
+                {varianceData.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-3 py-6 text-center text-gray-500"
+                    >
+                      Loading variance analysis...
+                    </td>
+                  </tr>
+                ) : (
+                  varianceData.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-gray-100">
+                      <td className="px-3 py-2">{row.department}</td>
+                      <td className="px-3 py-2">
+                        ₱{(row.forecast / 1000000).toFixed(2)}M
+                      </td>
+                      <td className="px-3 py-2">
+                        ₱{(row.proposal / 1000000).toFixed(2)}M
+                      </td>
+                      <td className="px-3 py-2">
+                        {row.variance >= 0 ? "+" : ""}₱
+                        {(Math.abs(row.variance) / 1000000).toFixed(2)}M
+                      </td>
+                      <td
+                        className={`px-3 py-2 font-semibold ${
+                          row.status === "Approved"
+                            ? "text-green-700"
+                            : row.status === "For Review"
+                            ? "text-yellow-700"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {row.percentage >= 0 ? "+" : ""}
+                        {row.percentage}%
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs ${
+                            row.status === "Approved"
+                              ? "bg-green-100 text-green-700"
+                              : row.status === "For Review"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
