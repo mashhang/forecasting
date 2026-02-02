@@ -3,8 +3,8 @@
 import { useAuth } from "@/app/context/AuthContext";
 import { useSidebar } from "@/app/context/SidebarContext";
 import { useRef, useState, useEffect } from "react";
-// import getApiUrl from "@/lib/getApiUrl"; // COMMENTED OUT - Using mock data instead
-import { mockData, getMockSummary, type NormalizedRow } from "@/lib/mockData";
+import getApiUrl from "@/lib/getApiUrl";
+import { type NormalizedRow } from "@/lib/mockData";
 
 export default function DataManagementPage() {
   const { isSidebarOpen } = useSidebar();
@@ -15,103 +15,66 @@ export default function DataManagementPage() {
 
   const { user } = useAuth();
 
-  // COMMENTED OUT - Using mock data instead of API calls
-  // useEffect(() => {
-  //   if (!user?.id) return;
-
-  //   const fetchRows = async () => {
-  //     try {
-  //       const res = await fetch(
-  //         `${getApiUrl()}/api/file/rows/${user.id}`
-  //       );
-  //       const data = await res.json();
-  //       setRows(data.rows || []);
-  //     } catch (err) {
-  //       console.error(err);
-  //     }
-  //   };
-
-  //   fetchRows();
-  // }, [user?.id]);
-
-  // Load mock data on component mount
   useEffect(() => {
-    setRows(mockData);
-  }, []);
+    if (!user?.id) return;
+
+    const fetchRows = async () => {
+      try {
+        const res = await fetch(`${getApiUrl()}/api/file/rows/${user.id}`);
+        const data = await res.json();
+        setRows(data.rows || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchRows();
+  }, [user?.id]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // COMMENTED OUT - Using mock data instead of actual file upload
-    // if (!user || !user.id) {
-    //   setMessage("❌ User info not ready. Please wait a moment and try again.");
-    //   return;
-    // }
+    if (!user || !user.id) {
+      setMessage("❌ User info not ready. Please wait a moment and try again.");
+      return;
+    }
 
-    // const file = e.target.files?.[0];
-    // if (!file) return;
-
-    // const formData = new FormData();
-    // formData.append("file", file);
-    // formData.append("userId", user.id); // now guaranteed to exist
-
-    // try {
-    //   setUploading(true);
-    //   setMessage("");
-
-    //   const res = await fetch(`${getApiUrl()}/api/file/upload`, {
-    //     method: "POST",
-    //     body: formData,
-    //   });
-
-    //   const data = await res.json();
-    //   if (!res.ok) {
-    //     if (data.details) {
-    //       throw new Error(`${data.error}: ${data.details.join(', ')}`);
-    //     }
-    //     throw new Error(data.error || "Upload failed");
-    //   }
-
-    //   // Set rows for display
-    //   setRows(data.rows); // data.rows comes from your backend
-
-    //   // Enhanced success message with summary
-    //   const summary = data.summary;
-    //   setMessage(
-    //     `✅ Uploaded successfully: ${data.count} rows\n` +
-    //     `📊 Total Budget: ₱${summary.totalBudget.toLocaleString()}\n` +
-    //     `🏢 Departments: ${summary.departmentCount} | 📁 Categories: ${summary.categoryCount}\n` +
-    //     `📋 Proposal: ${data.proposalTitle}`
-    //   );
-    // } catch (err: any) {
-    //   setMessage(`❌ ${err.message}`);
-    // } finally {
-    //   setUploading(false);
-    //   if (fileInputRef.current) fileInputRef.current.value = "";
-    // }
-
-    // MOCK FILE UPLOAD SIMULATION
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("userId", user.id);
 
     try {
       setUploading(true);
       setMessage("");
 
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const res = await fetch(`${getApiUrl()}/api/file/upload`, {
+        method: "POST",
+        body: formData,
+      });
 
-      // Use mock data as if it was uploaded
-      const summary = getMockSummary(mockData);
-      setRows(mockData);
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.details) {
+          throw new Error(`${data.error}: ${data.details.join(", ")}`);
+        }
+        throw new Error(data.error || "Upload failed");
+      }
 
+      // Set rows for display
+      setRows(data.rows);
+
+      // Enhanced success message with summary
+      const summary = data.summary;
       setMessage(
-        `✅ Mock Upload Successful: ${mockData.length} rows loaded\n` +
+        `✅ Uploaded successfully: ${data.count} rows\n` +
           `📊 Total Budget: ₱${summary.totalBudget.toLocaleString()}\n` +
           `🏢 Departments: ${summary.departmentCount} | 📁 Categories: ${summary.categoryCount}\n` +
-          `📋 Proposal: ${summary.proposalTitle}`
+          `📋 Proposal: ${data.proposalTitle}`
       );
     } catch (err: any) {
       setMessage(`❌ ${err.message}`);
@@ -119,6 +82,15 @@ export default function DataManagementPage() {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleDownloadTemplate = () => {
+    const link = document.createElement("a");
+    link.href = "/budget_template.csv";
+    link.download = "budget_template.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -136,16 +108,22 @@ export default function DataManagementPage() {
             <h2 className="text-lg font-semibold">Data Management</h2>
             <div className="flex space-x-2">
               <button
+                onClick={handleDownloadTemplate}
+                className="rounded-xl bg-gray-100 px-3 py-2 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Download Template
+              </button>
+              <button
                 onClick={handleUploadClick}
                 disabled={uploading || !user?.id}
-                className="rounded-xl bg-[var(--brand-gold)] px-3 py-2 text-[var(--brand-ink)]"
+                className="rounded-xl bg-[var(--brand-gold)] px-3 py-2 text-[var(--brand-ink)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {uploading ? "Uploading..." : "Upload CSV/Excel"}
+                {uploading ? "Uploading..." : "Upload CSV"}
               </button>
               <input
                 type="file"
                 ref={fileInputRef}
-                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                accept=".csv"
                 className="hidden"
                 onChange={handleFileChange}
               />

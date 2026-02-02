@@ -72,6 +72,15 @@ export default function ForecastChart({
       }, 0);
     });
 
+  // Calculate min and max values for better y-axis scaling
+  const allValues = [...actualData, ...forecastData];
+  const minValue = Math.min(...allValues);
+  const maxValue = Math.max(...allValues);
+  const range = maxValue - minValue;
+  const padding = range * 0.1; // 10% padding above and below
+  const yAxisMin = Math.max(0, minValue - padding);
+  const yAxisMax = maxValue + padding;
+
   const chartConfig = {
     labels: quarters,
     datasets: [
@@ -163,7 +172,9 @@ export default function ForecastChart({
         },
       },
       y: {
-        beginAtZero: true,
+        beginAtZero: false,
+        min: yAxisMin,
+        max: yAxisMax,
         grid: {
           color: "rgba(0, 0, 0, 0.1)",
           drawBorder: false,

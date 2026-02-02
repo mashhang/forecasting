@@ -1,8 +1,9 @@
 "use client";
 
+import { useForecast } from "@/app/context/ForecastContext";
+import { useNotification } from "@/app/context/NotificationContext";
 import { useSidebar } from "@/app/context/SidebarContext";
-import { useState, useEffect } from "react";
-import { mockData, type NormalizedRow } from "@/lib/mockData";
+import { useEffect, useState } from "react";
 
 interface VarianceAnalysisRow {
   department: string;
@@ -14,30 +15,100 @@ interface VarianceAnalysisRow {
 }
 
 export default function VarianceAnalysisPage() {
-  const { isSidebarOpen } = useSidebar();
-  const [varianceData, setVarianceData] = useState<VarianceAnalysisRow[]>([]);
+  const { forecasts, varianceData, setVarianceData, updateVarianceStatus } = useForecast();
+  const { addNotification } = useNotification();
+  const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
 
-  // Generate variance analysis from mock data
+  // Wrapper function to update variance status and trigger notifications
+  const handleStatusChange = (
+    department: string,
+    newStatus: "Approved" | "For Review" | "Disapproved"
+  ) => {
+    // Get the old status for comparison
+    const currentRow = varianceData.find((row) => row.department === department);
+    const oldStatus = currentRow?.status;
+
+    // Update the status
+    updateVarianceStatus(department, newStatus);
+
+    // Generate appropriate notification based on status change
+    if (oldStatus !== newStatus) {
+      const variancePercent = currentRow?.percentage || 0;
+
+      if (newStatus === "Approved") {
+        addNotification(
+          "variance_approved",
+          `Variance Approved`,
+          `${department} variance (${variancePercent}%) has been approved.`,
+          {
+            department,
+            variance: variancePercent,
+            status: newStatus,
+          }
+        );
+      } else if (newStatus === "For Review") {
+        addNotification(
+          "variance_flagged",
+          `Variance Flagged for Review`,
+          `${department} variance (${variancePercent}%) requires review.`,
+          {
+            department,
+            variance: variancePercent,
+            status: newStatus,
+          }
+        );
+      } else if (newStatus === "Disapproved") {
+        addNotification(
+          "variance_reviewed",
+          `Variance Marked as Disapproved`,
+          `${department} variance (${variancePercent}%) has been marked as disapproved.`,
+          {
+            department,
+            variance: variancePercent,
+            status: newStatus,
+          }
+        );
+      }
+    }
+  };
+
+  // Generate variance analysis from actual forecasts
   useEffect(() => {
     const generateVarianceAnalysis = () => {
-      // Group data by department
-      const departmentTotals = mockData.reduce((acc, row) => {
-        if (!acc[row.department]) {
-          acc[row.department] = 0;
-        }
-        acc[row.department] += row.total;
-        return acc;
-      }, {} as Record<string, number>);
+      if (!forecasts || forecasts.length === 0) {
+        setVarianceData([]);
+        return;
+      }
 
-      // Generate variance analysis for each department
-      const analysis: VarianceAnalysisRow[] = Object.entries(
-        departmentTotals
-      ).map(([department, proposal]) => {
-        // Generate a realistic forecast (slightly different from proposal)
-        const varianceFactor = (Math.random() - 0.5) * 0.3; // ±15% variance
-        const forecast = Math.round(proposal * (1 + varianceFactor));
-        const variance = forecast - proposal;
-        const percentage = Math.round((variance / proposal) * 100 * 10) / 10; // Round to 1 decimal
+      // Group forecasts by department to get total actual budget and total forecast
+      const departmentMap = new Map<string, {
+        totalActual: number;
+        totalForecast: number;
+      }>();
+
+      forecasts.forEach((forecast) => {
+        const department = forecast.department || "Unknown";
+        const existing = departmentMap.get(department) || {
+          totalActual: 0,
+          totalForecast: 0,
+        };
+
+        departmentMap.set(department, {
+          totalActual: existing.totalActual + forecast.total,
+          totalForecast: existing.totalForecast + forecast.forecastedTotal,
+        });
+      });
+
+      // Create variance analysis rows
+      const analysis: VarianceAnalysisRow[] = Array.from(
+        departmentMap.entries()
+      ).map(([department, { totalActual, totalForecast }]) => {
+        const proposal = totalActual; // Actual budget from data management
+        const forecastValue = totalForecast; // Predicted forecast
+        const variance = forecastValue - proposal;
+        const percentage = proposal > 0
+          ? Math.round((variance / proposal) * 100 * 10) / 10
+          : 0;
 
         // Determine status based on percentage variance
         let status: "Approved" | "For Review" | "Disapproved";
@@ -51,7 +122,7 @@ export default function VarianceAnalysisPage() {
 
         return {
           department,
-          forecast,
+          forecast: forecastValue,
           proposal,
           variance,
           percentage,
@@ -63,7 +134,7 @@ export default function VarianceAnalysisPage() {
     };
 
     generateVarianceAnalysis();
-  }, []);
+  }, [forecasts, setVarianceData]);
 
   return (
     <div
@@ -82,8 +153,19 @@ export default function VarianceAnalysisPage() {
             <h2 className="text-lg font-semibold">Variance Analysis</h2>
             <div className="flex gap-2">
               <button className="rounded-xl border px-3 py-2">Export</button>
-              <button className="rounded-xl bg-[var(--brand-gold)] px-3 py-2">
-                Flag &gt; 20%
+              <button
+                className={`rounded-xl px-3 py-2 ${showFlaggedOnly ? 'bg-[var(--brand-gold)] text-white' : 'bg-[var(--brand-gold)]'}`}
+                onClick={() => {
+                  setShowFlaggedOnly(!showFlaggedOnly);
+                  // Update status of flagged items (>15% variance) to "For Review"
+                  varianceData.forEach((row) => {
+                    if (Math.abs(row.percentage) > 15 && row.status === "Disapproved") {
+                      handleStatusChange(row.department, "For Review");
+                    }
+                  });
+                }}
+              >
+                Flag &gt; 15%
               </button>
             </div>
           </div>
@@ -106,11 +188,13 @@ export default function VarianceAnalysisPage() {
                       colSpan={6}
                       className="px-3 py-6 text-center text-gray-500"
                     >
-                      Loading variance analysis...
+                      No variance analysis data. Please generate a forecast first.
                     </td>
                   </tr>
                 ) : (
-                  varianceData.map((row, idx) => (
+                  varianceData
+                    .filter((row) => !showFlaggedOnly || Math.abs(row.percentage) > 15)
+                    .map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-100">
                       <td className="px-3 py-2">{row.department}</td>
                       <td className="px-3 py-2">
@@ -136,8 +220,15 @@ export default function VarianceAnalysisPage() {
                         {row.percentage}%
                       </td>
                       <td className="px-3 py-2">
-                        <span
-                          className={`rounded-full px-2 py-1 text-xs ${
+                        <select
+                          value={row.status}
+                          onChange={(e) =>
+                            handleStatusChange(
+                              row.department,
+                              e.target.value as "Approved" | "For Review" | "Disapproved"
+                            )
+                          }
+                          className={`rounded-full px-2 py-1 text-xs border-0 cursor-pointer font-semibold ${
                             row.status === "Approved"
                               ? "bg-green-100 text-green-700"
                               : row.status === "For Review"
@@ -145,8 +236,10 @@ export default function VarianceAnalysisPage() {
                               : "bg-red-100 text-red-700"
                           }`}
                         >
-                          {row.status}
-                        </span>
+                          <option value="Approved">Approved</option>
+                          <option value="For Review">For Review</option>
+                          <option value="Disapproved">Disapproved</option>
+                        </select>
                       </td>
                     </tr>
                   ))

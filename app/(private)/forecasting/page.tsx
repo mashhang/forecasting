@@ -2,20 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-// import getApiUrl from "@/lib/getApiUrl"; // COMMENTED OUT - Using mock data instead
+import { useForecast } from "@/app/context/ForecastContext";
+import getApiUrl from "@/lib/getApiUrl";
 import { useRouter } from "next/navigation";
-import { useSidebar } from "@/app/context/SidebarContext";
-import {
-  mockDepartments,
-  generateMockForecast,
-  type ForecastRow,
-} from "@/lib/mockData";
+import { type ForecastRow } from "@/lib/mockData";
 import ForecastChart from "@/app/components/ForecastChart";
 
 export default function Forecasting() {
-  const { isSidebarOpen } = useSidebar();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const { addOrUpdateForecast, clearAllForecasts, setSelectedDepartment: setContextSelectedDepartment } = useForecast();
 
   const [departments, setDepartments] = useState<string[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
@@ -29,6 +25,10 @@ export default function Forecasting() {
   const [forecasts, setForecasts] = useState<ForecastRow[]>([]);
   const [seasonalEffect, setSeasonalEffect] = useState<number>(0);
   const [chartData, setChartData] = useState<any>(null);
+  const [predictionInterval, setPredictionInterval] = useState<{
+    lower: number;
+    upper: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!user || authLoading) {
@@ -36,84 +36,156 @@ export default function Forecasting() {
       return;
     }
 
-    // COMMENTED OUT - Using mock data instead of API calls
-    // const fetchDepartments = async () => {
-    //   console.log("Base API URL:", getApiUrl()); // Add this line
-    //       console.log("Fetching departments...");
-    //   try {
-    //     const response = await fetch(`${getApiUrl()}/api/forecast/departments/${user.id}`);
-    //     console.log("Department API Response:", response);
-    //     if (!response.ok) {
-    //       const errorData = await response.json();
-    //       throw new Error(errorData.error || "Failed to fetch departments");
-    //     }
-    //     const result = await response.json();
-    //     console.log("Fetched departments:", result.departments);
-    //     setDepartments(result.departments);
-    //     if (result.departments.length > 0) {
-    //       setSelectedDepartment(result.departments[0]);
-    //     }
-    //   } catch (err: any) {
-    //     console.error("Error in fetchDepartments:", err);
-    //     setError(err.message || "An error occurred while fetching departments");
-    //   }
-    // };
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch(
+          `${getApiUrl()}/api/forecast/departments/${user.id}`
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to fetch departments");
+        }
+        const result = await response.json();
+        setDepartments(result.departments);
+        if (result.departments.length > 0) {
+          setSelectedDepartment(result.departments[0]);
+        }
+      } catch (err: any) {
+        console.error("Error in fetchDepartments:", err);
+        setError(err.message || "An error occurred while fetching departments");
+      }
+    };
 
-    // fetchDepartments();
-
-    // Load mock departments
-    setDepartments(mockDepartments);
-    if (mockDepartments.length > 0) {
-      setSelectedDepartment(mockDepartments[0]);
-    }
+    fetchDepartments();
   }, [user, router, authLoading]);
 
   const handleGenerateForecast = async () => {
     if (!user) return;
     setLoading(true);
     setError(null);
-    // setMessage(null);
+    setMessage(null);
 
     try {
-      // COMMENTED OUT - Using mock data instead of API calls
-      // const params = new URLSearchParams({
-      //   department: selectedDepartment,
-      //   seasonalityPeriod: seasonalityPeriod.toString(),
-      //   alpha: alpha.toString(),
-      //   beta: beta.toString(),
-      //   gamma: gamma.toString(),
-      // });
+      const params = new URLSearchParams({
+        department: selectedDepartment,
+        seasonalityPeriod: seasonalityPeriod.toString(),
+        alpha: alpha.toString(),
+        beta: beta.toString(),
+        gamma: gamma.toString(),
+      });
 
-      // const response = await fetch(`${getApiUrl()}/api/forecast/generate/${user.id}?${params.toString()}`);
-
-      // if (!response.ok) {
-      //   const errorData = await response.json();
-      //   throw new Error(errorData.error || "Failed to generate forecast");
-      // }
-
-      // const result = await response.json();
-      // setForecasts(result.forecasts);
-      // setVarianceAnalysis(result.varianceAnalysis);
-      // setMessage("Forecast generated successfully!");
-
-      // MOCK FORECAST GENERATION
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const result = generateMockForecast(
-        selectedDepartment,
-        seasonalityPeriod,
-        alpha,
-        beta,
-        gamma
+      const response = await fetch(
+        `${getApiUrl()}/api/forecast/generate/${user.id}?${params.toString()}`
       );
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate forecast");
+      }
+
+      const result = await response.json();
+      console.log("Forecast API Response:", result);
+      console.log("Forecasts array:", result.forecasts);
+
+      if (!result.forecasts || result.forecasts.length === 0) {
+        throw new Error(
+          "No forecast data returned. Please ensure you have uploaded budget data with at least 2 years of historical data."
+        );
+      }
+
+      // Check if forecasts have valid values
+      const hasValidForecasts = result.forecasts.some(
+        (f: ForecastRow) =>
+          f.forecastedQ1 > 0 ||
+          f.forecastedQ2 > 0 ||
+          f.forecastedQ3 > 0 ||
+          f.forecastedQ4 > 0
+      );
+
+      if (!hasValidForecasts) {
+        console.warn(
+          "All forecast values are 0. This may indicate insufficient historical data."
+        );
+        setError(
+          "Forecast generated but all values are 0. This usually means there isn't enough historical data (need at least 2 years/8 quarters of data for seasonality period of 4)."
+        );
+      }
+
       setForecasts(result.forecasts);
-      setSeasonalEffect(result.seasonalEffect);
-      setChartData(result.chartData);
-      // setMessage(
-      //   `Mock forecast generated successfully for ${selectedDepartment}!`
-      // );
+      addOrUpdateForecast(result.forecasts, selectedDepartment);
+      setContextSelectedDepartment(selectedDepartment);
+
+      // Calculate seasonal effect and prediction interval from forecasts if available
+      if (result.forecasts && result.forecasts.length > 0) {
+        const firstForecast = result.forecasts[0];
+        const seasonalEffectValue =
+          firstForecast.forecastedQ1 - (firstForecast.q1 || 0);
+        setSeasonalEffect(seasonalEffectValue);
+
+        // Calculate prediction interval for Q1 forecast
+        // Collect all historical quarterly values to calculate standard deviation
+        const historicalValues: number[] = [];
+        result.forecasts.forEach((f: ForecastRow) => {
+          if (f.q1 > 0) historicalValues.push(f.q1);
+          if (f.q2 > 0) historicalValues.push(f.q2);
+          if (f.q3 > 0) historicalValues.push(f.q3);
+          if (f.q4 > 0) historicalValues.push(f.q4);
+        });
+
+        if (historicalValues.length > 0) {
+          // Calculate mean and standard deviation
+          const mean =
+            historicalValues.reduce((sum, val) => sum + val, 0) /
+            historicalValues.length;
+          const variance =
+            historicalValues.reduce(
+              (sum, val) => sum + Math.pow(val - mean, 2),
+              0
+            ) / historicalValues.length;
+          const stdDev = Math.sqrt(variance);
+
+          // For 80% prediction interval, z-score is approximately 1.28
+          // Use coefficient of variation approach: margin = forecast * (stdDev/mean) * z-score
+          const forecastedQ1 = firstForecast.forecastedQ1;
+          const coefficientOfVariation = mean > 0 ? stdDev / mean : 0.1; // Default to 10% if mean is 0
+          const margin = forecastedQ1 * coefficientOfVariation * 1.28;
+
+          const lower = Math.max(0, forecastedQ1 - margin);
+          const upper = forecastedQ1 + margin;
+
+          setPredictionInterval({ lower, upper });
+        } else {
+          // Fallback: use 10% of forecast value as margin
+          const forecastedQ1 = firstForecast.forecastedQ1;
+          const margin = forecastedQ1 * 0.1 * 1.28;
+          setPredictionInterval({
+            lower: Math.max(0, forecastedQ1 - margin),
+            upper: forecastedQ1 + margin,
+          });
+        }
+
+        // Generate chart data from forecasts
+        const chartDataValue = {
+          labels: result.forecasts.map((f: ForecastRow) => f.description),
+          datasets: [
+            {
+              label: "Historical",
+              data: result.forecasts.map((f: ForecastRow) => f.total),
+            },
+            {
+              label: "Forecasted",
+              data: result.forecasts.map((f: ForecastRow) => f.forecastedTotal),
+            },
+          ],
+        };
+        setChartData(chartDataValue);
+      } else {
+        setSeasonalEffect(0);
+        setChartData(null);
+        setPredictionInterval(null);
+      }
+
+      setMessage("Forecast generated successfully!");
     } catch (err: any) {
       console.error(err);
       setError(err.message || "An unknown error occurred during forecasting");
@@ -196,6 +268,12 @@ export default function Forecasting() {
                 >
                   {loading ? "Running Forecast..." : "Run Forecast"}
                 </button>
+                <button
+                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white py-2 text-gray-700 hover:bg-gray-50"
+                  onClick={clearAllForecasts}
+                >
+                  Clear All Forecasts
+                </button>
               </div>
             </div>
 
@@ -221,7 +299,13 @@ export default function Forecasting() {
                       : "N/A"}
                   </div>
                   <div className="text-xs text-gray-500">
-                    80% PI: ₱ 1.15M – ₱ 1.36M
+                    {predictionInterval
+                      ? `80% PI: ₱${(
+                          predictionInterval.lower / 1000000
+                        ).toFixed(2)}M – ₱${(
+                          predictionInterval.upper / 1000000
+                        ).toFixed(2)}M`
+                      : "80% PI: Calculating..."}
                   </div>
                 </div>
                 <div className="rounded-xl bg-gray-50 p-4">
