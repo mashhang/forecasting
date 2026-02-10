@@ -1,6 +1,7 @@
 "use client";
 
 import { useSidebar } from "@/app/context/SidebarContext";
+import { useSettings } from "@/app/context/SettingsContext";
 import AddUserModal from "@/app/components/modals/AddUserModal";
 import EditUserModal from "@/app/components/modals/EditUserModal";
 import DeleteUserModal from "@/app/components/modals/DeleteUserModal";
@@ -17,6 +18,7 @@ interface User {
 
 export default function AdministrationPage() {
   const { isSidebarOpen } = useSidebar();
+  const { refreshSettings } = useSettings();
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -73,6 +75,7 @@ export default function AdministrationPage() {
       }
 
       setSettingsMessage("Settings saved successfully!");
+      await refreshSettings(); // Refresh global settings cache
       setTimeout(() => setSettingsMessage(""), 3000);
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -318,17 +321,50 @@ export default function AdministrationPage() {
         {/* System Logs */}
         <div className="mt-6 rounded-2xl border bg-white p-6">
           <h2 className="text-lg font-semibold">System Logs</h2>
-          <div className="mt-4 h-60 overflow-auto rounded-md border bg-gray-50 p-4 text-sm font-mono text-gray-800">
+          <div className="mt-4 overflow-auto">
             {logs.length > 0 ? (
-              logs.map((log, index) => (
-                <p key={index}>
-                  [{new Date(log.timestamp).toLocaleString()}] {log.level}:{" "}
-                  {log.message}
-                  {log.userName ? ` (User: ${log.userName})` : ""}
-                </p>
-              ))
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 text-left">
+                    <th className="px-3 py-2">Timestamp</th>
+                    <th className="px-3 py-2">Level</th>
+                    <th className="px-3 py-2">Message</th>
+                    <th className="px-3 py-2">User</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {[...logs].reverse().map((log, index) => (
+                    <tr key={index}>
+                      <td className="px-3 py-2 text-gray-600">
+                        {new Date(log.timestamp).toLocaleString()}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${
+                            log.level === "ERROR"
+                              ? "bg-red-100 text-red-700"
+                              : log.level === "WARN"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : log.level === "INFO"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {log.level}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">{log.message}</td>
+                      <td className="px-3 py-2 text-gray-600">
+                        {log.userName || "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ) : (
-              <p>No system logs available.</p>
+              <div className="rounded-md border bg-gray-50 p-4 text-sm text-gray-600">
+                No system logs available.
+              </div>
             )}
           </div>
         </div>

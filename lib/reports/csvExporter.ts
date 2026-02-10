@@ -8,7 +8,8 @@ import { ReportType, CSVExportOptions } from './types';
  */
 export function convertToCSV(
   data: Record<string, any>[],
-  headers?: string[]
+  headers?: string[],
+  inflationRate?: number
 ): string {
   if (data.length === 0) return '';
 
@@ -30,6 +31,13 @@ export function convertToCSV(
     return stringValue;
   };
 
+  // Create metadata row if inflation rate is provided
+  const metadataRows: string[] = [];
+  if (inflationRate !== undefined) {
+    metadataRows.push(`Declared Inflation Rate (NCR),${inflationRate}%`);
+    metadataRows.push(''); // Empty row for spacing
+  }
+
   // Create header row
   const headerRow = csvHeaders.map(escapeCSVValue).join(',');
 
@@ -38,7 +46,7 @@ export function convertToCSV(
     objectKeys.map((key) => escapeCSVValue(row[key])).join(',')
   );
 
-  return [headerRow, ...dataRows].join('\n');
+  return [...metadataRows, headerRow, ...dataRows].join('\n');
 }
 
 /**
@@ -145,13 +153,14 @@ export function exportAsCSV(
   data: Record<string, any>[],
   reportType: ReportType,
   headers?: string[],
-  options?: CSVExportOptions
+  options?: CSVExportOptions,
+  inflationRate?: number
 ): void {
   if (data.length === 0) {
     throw new Error('No data to export');
   }
 
-  const csvContent = convertToCSV(data, headers);
+  const csvContent = convertToCSV(data, headers, inflationRate);
   const filename = options?.filename || generateFilename(reportType, options?.includeTimestamp !== false);
 
   downloadCSV(csvContent, filename, options);

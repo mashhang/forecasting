@@ -6,6 +6,22 @@ import { useRef, useState, useEffect } from "react";
 import getApiUrl from "@/lib/getApiUrl";
 import { type NormalizedRow } from "@/lib/mockData";
 
+const logEvent = async (
+  message: string,
+  level: "INFO" | "WARN" | "ERROR" = "INFO",
+  userName?: string
+) => {
+  try {
+    await fetch(`${getApiUrl()}/api/log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, level, userName }),
+    });
+  } catch (err) {
+    console.error("Failed to log event:", err);
+  }
+};
+
 export default function DataManagementPage() {
   const { isSidebarOpen } = useSidebar();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,8 +81,10 @@ export default function DataManagementPage() {
         throw new Error(data.error || "Upload failed");
       }
 
-      // Set rows for display
-      setRows(data.rows);
+      // Fetch all rows from database (including previously uploaded data)
+      const allRowsRes = await fetch(`${getApiUrl()}/api/file/rows/${user.id}`);
+      const allRowsData = await allRowsRes.json();
+      setRows(allRowsData.rows || []);
 
       // Enhanced success message with summary
       const summary = data.summary;
@@ -75,6 +93,13 @@ export default function DataManagementPage() {
           `📊 Total Budget: ₱${summary.totalBudget.toLocaleString()}\n` +
           `🏢 Departments: ${summary.departmentCount} | 📁 Categories: ${summary.categoryCount}\n` +
           `📋 Proposal: ${data.proposalTitle}`
+      );
+
+      // Log the upload event
+      await logEvent(
+        `Uploaded data file: ${file.name} (${data.count} rows, Budget: ₱${summary.totalBudget.toLocaleString()}, Proposal: ${data.proposalTitle})`,
+        "INFO",
+        user?.name
       );
     } catch (err: any) {
       setMessage(`❌ ${err.message}`);

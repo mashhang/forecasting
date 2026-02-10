@@ -1,22 +1,26 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useAuth } from "@/app/context/AuthContext";
+import { useForecast } from "@/app/context/ForecastContext";
+import { useSettings } from "@/app/context/SettingsContext";
 import { useSidebar } from "@/app/context/SidebarContext";
+import getApiUrl from "@/lib/getApiUrl";
+import React, { useEffect, useState } from "react";
 // import API_URL from "@/lib/getApiUrl"; // COMMENTED OUT - Using mock data instead
-import { mockData, getMockSummary, type NormalizedRow } from "@/lib/mockData";
+import { getMockSummary, mockData, type NormalizedRow } from "@/lib/mockData";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
   BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend,
-  Filler,
 } from "chart.js";
-import { Line, Bar } from "react-chartjs-2";
+import { Bar, Line } from "react-chartjs-2";
 
 // Register Chart.js components
 ChartJS.register(
@@ -33,12 +37,19 @@ ChartJS.register(
 
 export default function Dashboard() {
   const { isSidebarOpen } = useSidebar();
+  const { forecasts, varianceData } = useForecast();
+  const { settings } = useSettings();
+  const { user } = useAuth();
   const [chartType, setChartType] = useState<"line" | "bar">("line");
+  const [uploadedData, setUploadedData] = useState<NormalizedRow[]>([]);
   const [dashboardData, setDashboardData] = useState({
     totalBudget: 0,
+    budgetProgress: 0,
+    yearOverYearTrend: 0,
     departments: [] as string[],
     departmentSpending: [] as { department: string; spending: number }[],
-    varianceItems: [] as NormalizedRow[],
+    varianceItems: [] as any[],
+    varianceThreshold: 15,
     quarterlyTrends: [] as { quarter: string; total: number }[],
     categories: [] as { category: string; count: number; total: number }[],
     topItems: [] as {
@@ -48,38 +59,97 @@ export default function Dashboard() {
     }[],
   });
 
+  // Fetch uploaded data from database
   useEffect(() => {
-    // Calculate comprehensive statistics from mock data
-    const totalBudget = mockData.reduce((sum, row) => sum + row.total, 0);
-    const departments = [...new Set(mockData.map((row) => row.department))];
+    if (!user?.id) return;
+
+    const fetchUploadedData = async () => {
+      try {
+        const res = await fetch(`${getApiUrl()}/api/file/rows/${user.id}`);
+        const data = await res.json();
+        setUploadedData(data.rows || []);
+      } catch (err) {
+        console.error("Failed to fetch uploaded data:", err);
+      }
+    };
+
+    fetchUploadedData();
+  }, [user?.id]);
+
+  useEffect(() => {
+    // Use forecasts if available, otherwise use uploaded data
+    const dataToUse = forecasts && forecasts.length > 0 ? forecasts : uploadedData;
+
+    // Calculate comprehensive statistics from actual data
+    if (!dataToUse || dataToUse.length === 0) {
+      setDashboardData({
+        totalBudget: 0,
+        budgetProgress: 0,
+        yearOverYearTrend: 0,
+        departments: [],
+        departmentSpending: [],
+        varianceItems: [],
+        varianceThreshold: settings?.variancePercentage || 15,
+        quarterlyTrends: [],
+        categories: [],
+        topItems: [],
+      });
+      return;
+    }
+
+    // Get unique years from data
+    const years = [...new Set(dataToUse.map((row) => row.year))].sort().reverse();
+    const currentYear = years[0] || new Date().getFullYear();
+    const previousYear = years[1];
+
+    // Filter to current year and previous year
+    const currentYearData = dataToUse.filter((row) => row.year === currentYear);
+    const previousYearData = previousYear ? dataToUse.filter((row) => row.year === previousYear) : [];
+
+    const totalBudget = currentYearData.reduce((sum, row) => sum + row.total, 0);
+    const departments = [...new Set(currentYearData.map((row) => row.department))];
 
     const departmentSpending = departments
       .map((dept) => {
-        const spending = mockData
+        const spending = currentYearData
           .filter((row) => row.department === dept)
           .reduce((sum, row) => sum + row.total, 0);
         return { department: dept, spending };
       })
       .sort((a, b) => b.spending - a.spending);
 
-    // Enhanced variance calculation (items with >20% variance)
-    const varianceItems = mockData.filter((row) => {
-      const avgQuarterly = row.total / 4;
-      const maxQuarter = Math.max(row.q1, row.q2, row.q3, row.q4);
-      const variance = Math.abs((maxQuarter - avgQuarterly) / avgQuarterly);
-      return variance > 0.2; // 20% threshold (matching variance analysis page)
-    });
+    // Use varianceData from ForecastContext and filter by variance threshold
+    const varianceThreshold = settings?.variancePercentage || 15;
+    const varianceItems = varianceData.filter(
+      (row) => Math.abs(row.percentage) > varianceThreshold
+    );
+
+    // Calculate budget progress (assuming Q1-Q4 is 1/4 through the year per quarter)
+    const q1Total = currentYearData.reduce((sum, row) => sum + row.q1, 0);
+    const q2Total = currentYearData.reduce((sum, row) => sum + row.q2, 0);
+    const totalSpentToDate = q1Total + q2Total;
+    const budgetProgress = Math.min(
+      (totalSpentToDate / totalBudget) * 100,
+      100
+    );
+
+    // Calculate actual YoY trend comparing current year vs previous year
+    const previousYearTotal = previousYearData.reduce((sum, row) => sum + row.total, 0);
+    const yearOverYearTrend =
+      previousYearTotal > 0
+        ? Math.round(((totalBudget - previousYearTotal) / previousYearTotal) * 1000) / 10
+        : 0;
 
     // Calculate quarterly trends
     const quarterlyTrends = [
-      { quarter: "Q1", total: mockData.reduce((sum, row) => sum + row.q1, 0) },
-      { quarter: "Q2", total: mockData.reduce((sum, row) => sum + row.q2, 0) },
-      { quarter: "Q3", total: mockData.reduce((sum, row) => sum + row.q3, 0) },
-      { quarter: "Q4", total: mockData.reduce((sum, row) => sum + row.q4, 0) },
+      { quarter: "Q1", total: currentYearData.reduce((sum, row) => sum + row.q1, 0) },
+      { quarter: "Q2", total: currentYearData.reduce((sum, row) => sum + row.q2, 0) },
+      { quarter: "Q3", total: currentYearData.reduce((sum, row) => sum + row.q3, 0) },
+      { quarter: "Q4", total: currentYearData.reduce((sum, row) => sum + row.q4, 0) },
     ];
 
     // Calculate category statistics
-    const categoryMap = mockData.reduce((acc, row) => {
+    const categoryMap = currentYearData.reduce((acc, row) => {
       if (!acc[row.category]) {
         acc[row.category] = { count: 0, total: 0 };
       }
@@ -93,7 +163,7 @@ export default function Dashboard() {
       .sort((a, b) => b.total - a.total);
 
     // Top spending items
-    const topItems = mockData
+    const topItems = currentYearData
       .sort((a, b) => b.total - a.total)
       .slice(0, 5)
       .map((row) => ({
@@ -104,14 +174,17 @@ export default function Dashboard() {
 
     setDashboardData({
       totalBudget,
+      budgetProgress,
+      yearOverYearTrend,
       departments,
       departmentSpending,
       varianceItems,
+      varianceThreshold,
       quarterlyTrends,
       categories,
       topItems,
     });
-  }, []);
+  }, [forecasts, uploadedData, varianceData, settings]);
 
   return (
     <div
@@ -131,24 +204,21 @@ export default function Dashboard() {
               ₱ {(dashboardData.totalBudget / 1000000).toFixed(1)}M
             </div>
             <div className="mt-3 h-2 rounded-full bg-gray-100">
-              <div className="h-2 w-3/5 rounded-full bg-[var(--brand-gold)]"></div>
+              <div
+                className="h-2 rounded-full bg-[var(--brand-gold)] transition-all"
+                style={{
+                  width: `${Math.min(dashboardData.budgetProgress, 100)}%`,
+                }}
+              ></div>
             </div>
             <div className="mt-2 text-xs text-gray-500">
-              ↑ 5.2% vs last year
+              ↑ {dashboardData.yearOverYearTrend.toFixed(1)}% vs last year
             </div>
           </div>
           <div className="rounded-2xl border bg-white p-4">
-            <div className="text-sm text-gray-500">Active Departments</div>
+            <div className="text-sm text-gray-500">Departments</div>
             <div className="mt-2 text-2xl font-bold">
               {dashboardData.departments.length}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <span className="rounded-full bg-[var(--brand-green)]/10 px-2 py-1 text-xs text-[var(--brand-green)]">
-                Active
-              </span>
-              <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
-                {dashboardData.departments.length - 1} pending
-              </span>
             </div>
           </div>
           <div className="rounded-2xl border bg-white p-4">
@@ -157,7 +227,7 @@ export default function Dashboard() {
               {dashboardData.varianceItems.length}
             </div>
             <p className="text-xs text-gray-500">
-              Items deviating ≥ 20% from average
+              Items deviating ≥ {dashboardData.varianceThreshold}% from average
             </p>
           </div>
         </div>

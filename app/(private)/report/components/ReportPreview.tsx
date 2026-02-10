@@ -4,6 +4,7 @@ import { ReportType } from '@/lib/reports/types';
 import type { ReportData } from '@/lib/reports/types';
 import { getReportHeaders } from '@/lib/reports/reportGenerators';
 import { formatCurrency, formatPercentage } from '@/lib/reports/csvExporter';
+import { useSettings } from '@/app/context/SettingsContext';
 
 interface ReportPreviewProps {
   reportType: ReportType;
@@ -16,6 +17,8 @@ export default function ReportPreview({
   data,
   isLoading = false,
 }: ReportPreviewProps) {
+  const { settings } = useSettings();
+  const inflationRate = settings?.inflationRate || 3.5;
   const headers = getReportHeaders(reportType);
   const rows = Array.isArray(data) ? data : [];
 
@@ -102,6 +105,28 @@ export default function ReportPreview({
         <p className="text-sm text-gray-600">
           Showing <span className="font-semibold text-[var(--brand-ink)]">{rows.length}</span> rows
         </p>
+      </div>
+
+      {/* Inflation Rate Metadata Section */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+        <div className="flex items-center gap-2">
+          <svg
+            className="w-5 h-5 text-blue-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span className="text-sm font-medium text-blue-900">
+            Declared Inflation Rate (NCR): <span className="font-semibold">{inflationRate}%</span>
+          </span>
+        </div>
       </div>
 
       <div className="overflow-x-auto border rounded-xl">

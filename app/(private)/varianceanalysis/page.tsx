@@ -3,6 +3,7 @@
 import { useForecast } from "@/app/context/ForecastContext";
 import { useNotification } from "@/app/context/NotificationContext";
 import { useSidebar } from "@/app/context/SidebarContext";
+import { useSettings } from "@/app/context/SettingsContext";
 import { useEffect, useState } from "react";
 
 interface VarianceAnalysisRow {
@@ -17,7 +18,9 @@ interface VarianceAnalysisRow {
 export default function VarianceAnalysisPage() {
   const { forecasts, varianceData, setVarianceData, updateVarianceStatus } = useForecast();
   const { addNotification } = useNotification();
+  const { settings } = useSettings();
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
+  const varianceThreshold = settings?.variancePercentage || 15;
 
   // Wrapper function to update variance status and trigger notifications
   const handleStatusChange = (
@@ -114,7 +117,7 @@ export default function VarianceAnalysisPage() {
         let status: "Approved" | "For Review" | "Disapproved";
         if (Math.abs(percentage) <= 5) {
           status = "Approved";
-        } else if (Math.abs(percentage) <= 15) {
+        } else if (Math.abs(percentage) <= varianceThreshold) {
           status = "For Review";
         } else {
           status = "Disapproved";
@@ -157,15 +160,15 @@ export default function VarianceAnalysisPage() {
                 className={`rounded-xl px-3 py-2 ${showFlaggedOnly ? 'bg-[var(--brand-gold)] text-white' : 'bg-[var(--brand-gold)]'}`}
                 onClick={() => {
                   setShowFlaggedOnly(!showFlaggedOnly);
-                  // Update status of flagged items (>15% variance) to "For Review"
+                  // Update status of flagged items to "For Review"
                   varianceData.forEach((row) => {
-                    if (Math.abs(row.percentage) > 15 && row.status === "Disapproved") {
+                    if (Math.abs(row.percentage) > varianceThreshold && row.status === "Disapproved") {
                       handleStatusChange(row.department, "For Review");
                     }
                   });
                 }}
               >
-                Flag &gt; 15%
+                Flag &gt; {varianceThreshold}%
               </button>
             </div>
           </div>
@@ -193,7 +196,7 @@ export default function VarianceAnalysisPage() {
                   </tr>
                 ) : (
                   varianceData
-                    .filter((row) => !showFlaggedOnly || Math.abs(row.percentage) > 15)
+                    .filter((row) => !showFlaggedOnly || Math.abs(row.percentage) > varianceThreshold)
                     .map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-100">
                       <td className="px-3 py-2">{row.department}</td>

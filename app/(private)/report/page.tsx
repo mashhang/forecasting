@@ -1,8 +1,11 @@
 "use client";
 
+import { useAuth } from "@/app/context/AuthContext";
 import { useForecast } from "@/app/context/ForecastContext";
 import { useSidebar } from "@/app/context/SidebarContext";
+import { useSettings } from "@/app/context/SettingsContext";
 import { exportAsCSV } from "@/lib/reports/csvExporter";
+import getApiUrl from "@/lib/getApiUrl";
 import {
   REPORT_CONFIGS,
   generateReport,
@@ -18,9 +21,27 @@ import ReportFiltersComponent from "./components/ReportFilters";
 import ReportPreview from "./components/ReportPreview";
 import ReportSelector from "./components/ReportSelector";
 
+const logEvent = async (
+  message: string,
+  level: "INFO" | "WARN" | "ERROR" = "INFO",
+  userName?: string
+) => {
+  try {
+    await fetch(`${getApiUrl()}/api/log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, level, userName }),
+    });
+  } catch (err) {
+    console.error("Failed to log event:", err);
+  }
+};
+
 export default function ReportGenerationPage() {
   const { isSidebarOpen } = useSidebar();
   const { forecasts, varianceData } = useForecast();
+  const { settings } = useSettings();
+  const { user } = useAuth();
 
   // State management
   const [selectedReportType, setSelectedReportType] = useState<ReportType>(
@@ -61,6 +82,15 @@ export default function ReportGenerationPage() {
         }
 
         setPreviewData(data);
+
+        // Log report generation
+        if (hasReportData(data)) {
+          await logEvent(
+            `Generated report: ${selectedReportType} with ${data.length} rows`,
+            "INFO",
+            user?.name
+          );
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to generate report");
         setPreviewData([]);
@@ -79,7 +109,7 @@ export default function ReportGenerationPage() {
   };
 
   // Handle CSV export
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     try {
       if (!hasReportData(previewData)) {
         setError("No data to export");
@@ -88,8 +118,16 @@ export default function ReportGenerationPage() {
 
       const csvData = transformForCSVExport(previewData, selectedReportType);
       const headers = getReportHeaders(selectedReportType);
+      const inflationRate = settings?.inflationRate || 3.5;
 
-      exportAsCSV(csvData, selectedReportType, headers);
+      exportAsCSV(csvData, selectedReportType, headers, undefined, inflationRate);
+
+      // Log the export event
+      await logEvent(
+        `Exported report as CSV: ${selectedReportType} with ${previewData.length} rows`,
+        "INFO",
+        user?.name
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to export CSV");
     }
