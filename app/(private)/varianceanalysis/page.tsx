@@ -2,8 +2,8 @@
 
 import { useForecast } from "@/app/context/ForecastContext";
 import { useNotification } from "@/app/context/NotificationContext";
-import { useSidebar } from "@/app/context/SidebarContext";
 import { useSettings } from "@/app/context/SettingsContext";
+import { useSidebar } from "@/app/context/SidebarContext";
 import { useEffect, useState } from "react";
 
 interface VarianceAnalysisRow {
@@ -155,7 +155,6 @@ export default function VarianceAnalysisPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Variance Analysis</h2>
             <div className="flex gap-2">
-              <button className="rounded-xl border px-3 py-2">Export</button>
               <button
                 className={`rounded-xl px-3 py-2 ${showFlaggedOnly ? 'bg-[var(--brand-gold)] text-white' : 'bg-[var(--brand-gold)]'}`}
                 onClick={() => {
@@ -177,8 +176,8 @@ export default function VarianceAnalysisPage() {
               <thead>
                 <tr className="bg-gray-50 text-left">
                   <th className="px-3 py-2">Department</th>
-                  <th className="px-3 py-2">Forecast</th>
                   <th className="px-3 py-2">Proposal</th>
+                  <th className="px-3 py-2">Forecast</th>
                   <th className="px-3 py-2">Variance</th>
                   <th className="px-3 py-2">%</th>
                   <th className="px-3 py-2">Status</th>
@@ -201,10 +200,10 @@ export default function VarianceAnalysisPage() {
                     <tr key={idx} className="hover:bg-gray-100">
                       <td className="px-3 py-2">{row.department}</td>
                       <td className="px-3 py-2">
-                        ₱{(row.forecast / 1000000).toFixed(2)}M
+                        ₱{(row.proposal / 1000000).toFixed(2)}M
                       </td>
                       <td className="px-3 py-2">
-                        ₱{(row.proposal / 1000000).toFixed(2)}M
+                        ₱{(row.forecast / 1000000).toFixed(2)}M
                       </td>
                       <td className="px-3 py-2">
                         {row.variance >= 0 ? "+" : ""}₱

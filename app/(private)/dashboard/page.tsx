@@ -35,6 +35,15 @@ ChartJS.register(
   Filler
 );
 
+// Format budget amounts - use M for millions, K for thousands
+const formatBudget = (amount: number): string => {
+  if (amount >= 1000000) {
+    return `₱${(amount / 1000000).toFixed(2)}M`;
+  } else {
+    return `₱${(amount / 1000).toFixed(0)}K`;
+  }
+};
+
 export default function Dashboard() {
   const { isSidebarOpen } = useSidebar();
   const { forecasts, varianceData } = useForecast();
@@ -46,6 +55,7 @@ export default function Dashboard() {
     totalBudget: 0,
     budgetProgress: 0,
     yearOverYearTrend: 0,
+    currentYear: 0,
     departments: [] as string[],
     departmentSpending: [] as { department: string; spending: number }[],
     varianceItems: [] as any[],
@@ -77,8 +87,8 @@ export default function Dashboard() {
   }, [user?.id]);
 
   useEffect(() => {
-    // Use forecasts if available, otherwise use uploaded data
-    const dataToUse = forecasts && forecasts.length > 0 ? forecasts : uploadedData;
+    // Use uploaded data if available (it's the source of truth), otherwise fall back to forecasts
+    const dataToUse = uploadedData && uploadedData.length > 0 ? uploadedData : forecasts;
 
     // Calculate comprehensive statistics from actual data
     if (!dataToUse || dataToUse.length === 0) {
@@ -86,6 +96,7 @@ export default function Dashboard() {
         totalBudget: 0,
         budgetProgress: 0,
         yearOverYearTrend: 0,
+        currentYear: 0,
         departments: [],
         departmentSpending: [],
         varianceItems: [],
@@ -176,6 +187,7 @@ export default function Dashboard() {
       totalBudget,
       budgetProgress,
       yearOverYearTrend,
+      currentYear,
       departments,
       departmentSpending,
       varianceItems,
@@ -199,9 +211,9 @@ export default function Dashboard() {
       <div className="mx-auto max-w-[1600px] mt-4">
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border bg-white p-4">
-            <div className="text-sm text-gray-500">Total Budget (2024)</div>
+            <div className="text-sm text-gray-500">Total Budget ({dashboardData.currentYear || 2024})</div>
             <div className="mt-2 text-2xl font-bold">
-              ₱ {(dashboardData.totalBudget / 1000000).toFixed(1)}M
+              {formatBudget(dashboardData.totalBudget)}
             </div>
             <div className="mt-3 h-2 rounded-full bg-gray-100">
               <div
@@ -328,9 +340,10 @@ export default function Dashboard() {
                           callbacks: {
                             label: function (context: any) {
                               const value = context.parsed.y;
-                              return `Spending: ₱${(value / 1000000).toFixed(
-                                1
-                              )}M`;
+                              const formatted = value >= 1000000
+                                ? `₱${(value / 1000000).toFixed(2)}M`
+                                : `₱${(value / 1000).toFixed(0)}K`;
+                              return `Spending: ${formatted}`;
                             },
                           },
                         },
@@ -349,7 +362,7 @@ export default function Dashboard() {
                           },
                         },
                         y: {
-                          beginAtZero: true,
+                          beginAtZero: false,
                           grid: {
                             color: "rgba(0, 0, 0, 0.1)",
                           },
@@ -360,7 +373,10 @@ export default function Dashboard() {
                             },
                             color: "#6b7280",
                             callback: function (value: any) {
-                              return `₱${(value / 1000000).toFixed(1)}M`;
+                              const formatted = value >= 1000000
+                                ? `₱${(value / 1000000).toFixed(2)}M`
+                                : `₱${(value / 1000).toFixed(0)}K`;
+                              return formatted;
                             },
                           },
                         },
@@ -427,9 +443,10 @@ export default function Dashboard() {
                           callbacks: {
                             label: function (context: any) {
                               const value = context.parsed.y;
-                              return `Spending: ₱${(value / 1000000).toFixed(
-                                1
-                              )}M`;
+                              const formatted = value >= 1000000
+                                ? `₱${(value / 1000000).toFixed(2)}M`
+                                : `₱${(value / 1000).toFixed(0)}K`;
+                              return `Spending: ${formatted}`;
                             },
                           },
                         },
@@ -448,7 +465,7 @@ export default function Dashboard() {
                           },
                         },
                         y: {
-                          beginAtZero: true,
+                          beginAtZero: false,
                           grid: {
                             color: "rgba(0, 0, 0, 0.1)",
                           },
@@ -459,7 +476,10 @@ export default function Dashboard() {
                             },
                             color: "#6b7280",
                             callback: function (value: any) {
-                              return `₱${(value / 1000000).toFixed(1)}M`;
+                              const formatted = value >= 1000000
+                                ? `₱${(value / 1000000).toFixed(2)}M`
+                                : `₱${(value / 1000).toFixed(0)}K`;
+                              return formatted;
                             },
                           },
                         },
@@ -485,7 +505,7 @@ export default function Dashboard() {
               >
                 <div className="text-sm text-gray-500">{trend.quarter}</div>
                 <div className="mt-1 text-lg font-bold">
-                  ₱{(trend.total / 1000000).toFixed(1)}M
+                  {formatBudget(trend.total)}
                 </div>
                 <div className="mt-1 h-2 rounded-full bg-gray-200">
                   <div
@@ -516,7 +536,7 @@ export default function Dashboard() {
                   <li key={index} className="flex justify-between">
                     <span>{dept.department}</span>
                     <span className="font-semibold">
-                      ₱{(dept.spending / 1000000).toFixed(1)}M
+                      {formatBudget(dept.spending)}
                     </span>
                   </li>
                 ))}
@@ -547,7 +567,7 @@ export default function Dashboard() {
                 <li key={index} className="flex justify-between">
                   <span>{category.category}</span>
                   <span className="font-semibold">
-                    ₱{(category.total / 1000000).toFixed(1)}M
+                    {formatBudget(category.total)}
                   </span>
                 </li>
               ))}

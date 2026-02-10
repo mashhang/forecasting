@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import ForecastChart from "@/app/components/ForecastChart";
 import { useAuth } from "@/app/context/AuthContext";
 import { useForecast } from "@/app/context/ForecastContext";
 import getApiUrl from "@/lib/getApiUrl";
-import { useRouter } from "next/navigation";
 import { type ForecastRow } from "@/lib/mockData";
-import ForecastChart from "@/app/components/ForecastChart";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Forecasting() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const { addOrUpdateForecast, clearAllForecasts, setSelectedDepartment: setContextSelectedDepartment } = useForecast();
+  const { addOrUpdateForecast, setSelectedDepartment: setContextSelectedDepartment } = useForecast();
 
   const [departments, setDepartments] = useState<string[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
@@ -268,24 +268,12 @@ export default function Forecasting() {
                 >
                   {loading ? "Running Forecast..." : "Run Forecast"}
                 </button>
-                <button
-                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white py-2 text-gray-700 hover:bg-gray-50"
-                  onClick={clearAllForecasts}
-                >
-                  Clear All Forecasts
-                </button>
               </div>
             </div>
 
             <div className="rounded-2xl border bg-white p-6 lg:col-span-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">Forecast Output</h2>
-                <div className="flex gap-2">
-                  <button className="rounded-xl border px-3 py-2">Save</button>
-                  <button className="rounded-xl border px-3 py-2">
-                    Export CSV
-                  </button>
-                </div>
               </div>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div className="rounded-xl bg-gray-50 p-4">
